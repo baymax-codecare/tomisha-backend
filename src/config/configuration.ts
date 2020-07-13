@@ -1,6 +1,7 @@
 import * as fs from 'fs';
 import { getMetadataArgsStorage } from 'typeorm';
 import { join } from 'path';
+import { HandlebarsAdapter } from '@nestjs-modules/mailer/dist/adapters/handlebars.adapter';
 
 export default () => {
   const { __basedir } = global as any;
@@ -33,7 +34,14 @@ export default () => {
     tmpDirName: TMP_UPLOAD_DIR_NAME,
     auth: {
       secret: process.env.AUTH_SECRET,
-      maxAge: +process.env.AUTH_MAX_AGE || 24 * 60 * 60 * 1000,
+      expiresIn: process.env.AUTH_EXPIRES_IN || '30d',
+      callbackHref: process.env.AUTH_CALLBACK_HREF,
+      verifiedHref: process.env.AUTH_VERIFIED_HREF,
+      resetPasswordHref: process.env.AUTH_RESET_PW_HREF,
+      facebook: {
+        clientId: process.env.AUTH_FB_CLIENT_ID,
+        secret: process.env.AUTH_FB_SECRET,
+      }
     },
     typeorm: {
       type: 'postgres',
@@ -46,10 +54,10 @@ export default () => {
       logger: 'advanced-console',
       entities: getMetadataArgsStorage().tables.map(tbl => tbl.target),
       synchronize: false,
-      options: {
-        encrypt: false,
-        enableArithAbort: false,
-      },
+      // options: {
+      //   encrypt: false,
+      //   enableArithAbort: false,
+      // },
       autoLoadEntities: true,
     },
     redis: {
@@ -71,6 +79,14 @@ export default () => {
       },
       defaults: {
         from: process.env.MAIL_FROM,
+      },
+      preview: true,
+      template: {
+        dir: join(process.cwd(), 'templates'),
+        adapter: new HandlebarsAdapter(),
+        options: {
+          strict: true,
+        },
       },
     },
   };

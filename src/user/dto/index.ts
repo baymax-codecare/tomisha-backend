@@ -1,0 +1,1 @@
+export { PatchMeDto } from './patch-me.dto';

@@ -3,7 +3,6 @@ import { AppModule } from './app.module';
 import { NestExpressApplication } from '@nestjs/platform-express';
 import { ValidationPipe, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import  '@nestjs/platform-socket.io';
 import * as helmet from 'helmet';
 import * as rateLimit from 'express-rate-limit';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
@@ -19,10 +18,13 @@ async function bootstrap() {
 
   const configService = app.get(ConfigService);
 
+  // Enable CORS
+  app.enableCors();
+
   // Disable 304 cache
   app.set('etag', false);
 
-  // Serve api on /api/*
+  // Serve all routes on /api/*
   app.setGlobalPrefix('api');
 
   // Global validation pipe https://docs.nestjs.com/techniques/validation

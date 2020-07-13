@@ -7,6 +7,9 @@ import { AuthService } from './auth.service';
 import { AuthController } from './auth.controller';
 import { JwtStrategy } from './jwt.strategy';
 import { UserModule } from '../user/user.module';
+import { LocalStrategy } from './local.strategy';
+import { FacebookStrategy } from './fb.strategy';
+// import { GoogleStrategy } from './google.strategy';
 
 @Module({
   imports: [
@@ -18,7 +21,7 @@ import { UserModule } from '../user/user.module';
       inject: [ConfigService],
       useFactory: (configService: ConfigService) => ({
         secret: configService.get('auth.secret'),
-        signOptions: { expiresIn: '7d' },
+        signOptions: { expiresIn: configService.get('auth.expiresIn') },
       }),
     }),
 
@@ -26,7 +29,10 @@ import { UserModule } from '../user/user.module';
   ],
   providers: [
     AuthService,
+    LocalStrategy,
     JwtStrategy,
+    FacebookStrategy,
+    // GoogleStrategy,
   ],
   controllers: [AuthController],
 })
