@@ -39,7 +39,7 @@ export class User {
   @Column({ select: false })
   public password: string;
 
-  @Column('smallint', { default: UserType.EMPLOYEE })
+  @Column('smallint', { nullable: true })
   public type: UserType;
 
   @Index({ unique: true })

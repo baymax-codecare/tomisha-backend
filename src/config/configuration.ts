@@ -43,6 +43,9 @@ export default () => {
         secret: process.env.AUTH_FB_SECRET,
       }
     },
+    recaptcha: {
+      secret: process.env.RECAPTCHA_SECRET,
+    },
     typeorm: {
       type: 'postgres',
       host: process.env.TYPEORM_HOST || 'localhost',

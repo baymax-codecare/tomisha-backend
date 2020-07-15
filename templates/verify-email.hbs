@@ -1,22 +1,22 @@
 <!doctype html>
 <html>
-
 <head>
   <meta name="viewport" content="width=device-width" />
   <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
   <title>Bitte bestätige deine E-Mail-Adresse</title>
   <style>
+    body {
+      font-size: 21px;
+      color: #4A5568;
+    }
     h1 {
       font-size: 42px;
       color: #718096;
-      margin-bottom: 36px;
     }
-    .message {
-      font-size: 21px;
-      color: #4A5568;
-      margin-bottom: 20px;
+    p {
+      margin: 0;
     }
-    .signature {
+    .small {
       font-size: 14px;
       color: #718096;
     }
@@ -27,15 +27,12 @@
       height: 40px;
       border-radius: 12px;
       background: linear-gradient(95deg, #319795 0%, #3182CE 100%);
+      font-size: 14px;
+      line-height: 40px;
       color: #E6FFFA;
       text-align: center;
-      line-height: 40px;
       cursor: pointer;
-      margin-bottom: 32px;
       text-decoration: none;
-    }
-    .sender, hr {
-      margin-bottom: 20px;
     }
     hr {
       height: 1px;
@@ -43,13 +40,22 @@
       background-color: #CBD5E0;
       border: none;
     }
+    .mb-md {
+      margin-bottom: 20px;
+    }
+    .mb-lg {
+      margin-bottom: 32px;
+    }
+    .mb-xl {
+      margin-bottom: 36px;
+    }
   </style>
 </head>
 
-<body class="">
-  <h1>tomisha</h1>
+<body>
+  <h1 class="mb-xl">tomisha</h1>
 
-  <p class="message">
+  <p class="message mb-md">
     Hallo {{firstName}} {{lastName}},
     <br />
     <br />
@@ -58,18 +64,23 @@
     Klick bitte auf den folgenden Link, um deine Anmeldung zu vervollständigen:
   </p>
 
-  <a href="{{tokenUrl}}" target="_blank" class="btn">
+  <a href="{{tokenUrl}}" target="_blank" class="btn mb-lg">
     E-Mail-Adresse bestätigne
   </a>
 
-  <p class="sender">
+  <p>oder füge ihn in dein Browser ein:</p>
+  <a href="{{tokenUrl}}" target="_blank" class="small mb-md">{{tokenUrl}}</a>
+
+  <p class="mb-xl">Dieser Link ist nur in den nächsten {{expHours}} Stunden gültig.</p>
+
+  <p class="sender mb-md">
     Danke!<br />
     Dein Tomisha-Team
   </p>
 
-  <hr>
+  <hr class="mb-md">
 
-  <p class="signature">
+  <p class="small">
     Copyright © 2020 Tomisha. Alle Rechte vorbehalten.
     <br />
     <br />
@@ -78,5 +89,4 @@
     Brühlbergstrasse 11, 8400 Winterthur, Schweiz
   </p>
 </body>
-
 </html>

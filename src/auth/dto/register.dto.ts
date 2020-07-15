@@ -8,4 +8,8 @@ export class RegisterDto {
   @IsString()
   @IsNotEmpty()
   public token: string;
+
+  @IsString()
+  @IsNotEmpty()
+  public captcha: string;
 }

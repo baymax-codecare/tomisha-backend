@@ -1,12 +1,14 @@
 import { Injectable, BadRequestException, InternalServerErrorException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { MailerService } from '@nestjs-modules/mailer';
+import { ConfigService } from '@nestjs/config';
 import { RedisService } from 'nestjs-redis';
+import fetch from 'node-fetch';
+
 import { UserService } from '../user/user.service';
 import { compareHash, hash } from '../shared/utils';
-import { ChangePasswordDto, ForgotPasswordDto, ResetPasswordDto, VerifyEmailDto, RegisterDto } from './dto';
 import { AuthUser } from './interface/auth-user.interface';
-import { ConfigService } from '@nestjs/config';
+import { ChangePasswordDto, ForgotPasswordDto, ResetPasswordDto, VerifyEmailDto, RegisterDto } from './dto';
 
 const FORGOT_PW_EXP_SEC = 24 * 60 * 60; // 1d
 const VERIFY_EMAIL_EXP_SEC = 24 * 60 * 60; // 1d
@@ -22,12 +24,13 @@ export class AuthService {
   ) {}
 
   public async validateUser(email: string, pass: string): Promise<AuthUser> {
-    const user = await this.userService.findOne({ where: { email: email?.toLowerCase?.().trim() }, select: ['id', 'email', 'password'] });
+    const user = await this.userService.findOne({
+      where: { email: email?.toLowerCase?.().trim() },
+      select: ['id', 'email', 'password', 'type', 'firstName', 'lastName', 'gender'],
+    });
     if (user && compareHash(pass, user.password)) {
-      return {
-        id: user.id,
-        email: user.email,
-      }
+      delete user.password;
+      return user;
     } else {
       throw new BadRequestException('Email or password is incorrect');
     }
@@ -36,12 +39,17 @@ export class AuthService {
   public async login(user: any) {
     return {
       user,
-      accessToken: this.jwtService.sign(user),
+      accessToken: this.jwtService.sign({
+        id: user.id,
+        email: user.email,
+        type: user.type,
+      }),
+      expiresAt: this.getExpDate(this.configService.get('auth.expiresIn')),
     };
   }
 
   public async getLoginCallbackUrl(user: any) {
-    return this.configService.get('auth.callbackHref') + `?token=${this.jwtService.sign(user)}&user=${JSON.stringify(user)}`;
+    return this.configService.get('auth.callbackHref') + `?token=${this.jwtService.sign(user)}&user=${JSON.stringify(user)}&expiresAt=${this.getExpDate(this.configService.get('auth.expiresIn'))}`;
   }
 
   public async verifyEmail(verifyEmailDto: VerifyEmailDto): Promise<void> {
@@ -65,7 +73,7 @@ export class AuthService {
         firstName,
         lastName,
         tokenUrl,
-        // exp: Math.round(VERIFY_EMAIL_EXP_SEC / 3600),
+        expHours: Math.round(VERIFY_EMAIL_EXP_SEC / 3600),
       },
     });
   }
@@ -80,7 +88,14 @@ export class AuthService {
   }
 
   public async registerLocal(registerDto: RegisterDto): Promise<any> {
-    const { password, token } = registerDto;
+    const { password, token, captcha } = registerDto;
+
+    const recaptchaUrl = `https://www.google.com/recaptcha/api/siteverify?secret=${this.configService.get('recaptcha.secret')}&response=${captcha}`;
+    const recaptchaResponse = await fetch(recaptchaUrl, { method: 'post' });
+    const json = await recaptchaResponse.json();
+    if (!json.success) {
+      throw new BadRequestException('reCaptcha verification fail');
+    }
 
     const newUser = await this.validateToken(token, 'email', this.genVerifyEmailKey, (decoded) => {;
       return this.userService.create({
@@ -92,13 +107,8 @@ export class AuthService {
       });
     });
 
-    return {
-      id: newUser.id,
-      email: newUser.email,
-      firstName: newUser.firstName,
-      lastName: newUser.lastName,
-      picture: newUser.picture,
-    };
+    delete newUser.password;
+    return newUser;
   }
 
   public async findOrCreateUser(user: any) {
@@ -142,7 +152,7 @@ export class AuthService {
         firstName: user.firstName,
         lastName: user.lastName,
         tokenUrl,
-        // exp: Math.round(VERIFY_EMAIL_EXP_SEC / 3600),
+        expHours: Math.round(VERIFY_EMAIL_EXP_SEC / 3600),
       },
     })
       .catch(() => {
@@ -175,10 +185,13 @@ export class AuthService {
     const redisClient = await this.redisService.getClient();
     await redisClient.set(key, token, 'EX', exp);
 
-    const expStr = new Date(Date.now() + FORGOT_PW_EXP_SEC * 1000).toUTCString();
-    const tokenUrl = `${callbackHref}?token=${token}&exp=${encodeURI(expStr)}`;
+    const tokenUrl = `${callbackHref}?token=${token}&expiresAt=${encodeURI(this.getExpDate(FORGOT_PW_EXP_SEC))}`;
 
     return tokenUrl;
+  }
+
+  private getExpDate(exp) {
+    return new Date(Date.now() + exp * 1000).toUTCString();
   }
 
   private async validateToken(token: string, key: string, makeKey: (id: string) => string, cb: Function) {

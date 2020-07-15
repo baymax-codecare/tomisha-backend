@@ -21,7 +21,10 @@ import { FacebookStrategy } from './fb.strategy';
       inject: [ConfigService],
       useFactory: (configService: ConfigService) => ({
         secret: configService.get('auth.secret'),
-        signOptions: { expiresIn: configService.get('auth.expiresIn') },
+        signOptions: {
+          expiresIn: configService.get('auth.expiresIn'),
+          noTimestamp: true,
+        },
       }),
     }),
 

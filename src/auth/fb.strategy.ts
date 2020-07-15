@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { Strategy } from 'passport-facebook';
 import { ConfigService } from '@nestjs/config';
 import { PassportStrategy } from '@nestjs/passport';
+import { classToPlain } from 'class-transformer';
 import { UserService } from '../user/user.service';
 
 @Injectable()
@@ -24,13 +25,7 @@ export class FacebookStrategy extends PassportStrategy(Strategy, 'facebook') {
 
     const existedUser = await this.userService.findOne({ where: { email } });
     if (existedUser) {
-      return done(null, {
-        id: existedUser.id,
-        email,
-        firstName: existedUser.firstName,
-        lastName: existedUser.lastName,
-        picture: existedUser.picture,
-      });
+      return done(null, classToPlain(existedUser));
     }
 
     done(null, {

@@ -25,7 +25,7 @@ async function bootstrap() {
   app.set('etag', false);
 
   // Serve all routes on /api/*
-  app.setGlobalPrefix('api');
+  // app.setGlobalPrefix('api');
 
   // Global validation pipe https://docs.nestjs.com/techniques/validation
   app.useGlobalPipes(new ValidationPipe({
