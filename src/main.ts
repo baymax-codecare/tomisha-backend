@@ -38,7 +38,7 @@ async function bootstrap() {
   app.use(helmet());
 
   // Rate limit 100 requests per windowMs in 10 minutes
-  app.use('/api', rateLimit({
+  app.use('/', rateLimit({
     windowMs: 60 * 1000,
     max: 100,
   }));

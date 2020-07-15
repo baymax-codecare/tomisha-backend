@@ -14,7 +14,7 @@ export class FacebookStrategy extends PassportStrategy(Strategy, 'facebook') {
     super({
       clientID: configService.get('auth.facebook.clientId'),
       clientSecret: configService.get('auth.facebook.secret'),
-      callbackURL: 'http://localhost:3100/api/auth/redirect/facebook',
+      callbackURL: configService.get('domain') + 'auth/redirect/facebook',
       profileFields: ['id', 'email', 'name', 'picture'],
       scope: ['email'],
     });

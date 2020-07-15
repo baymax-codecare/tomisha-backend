@@ -27,6 +27,7 @@ export default () => {
   return {
     isProd,
     port: parseInt(process.env.APP_PORT, 10) || 7600,
+    domain: process.env.APP_DOMAIN,
     uploadDir,
     assetDir,
     assetDirName: ASSET_DIR_NAME,
