@@ -61,6 +61,6 @@ async function bootstrap() {
   const port = configService.get('port');
   await app.listen(port);
 
-  Logger.log(`Listening on ${port}`, 'BOOSTRAP');
+  Logger.log(`[${process.env.NODE_ENV || 'development'}] Listening on ${port}`, 'BOOSTRAP');
 }
 bootstrap();
