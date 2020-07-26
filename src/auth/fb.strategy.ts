@@ -15,15 +15,18 @@ export class FacebookStrategy extends PassportStrategy(Strategy, 'facebook') {
       clientID: configService.get('auth.facebook.clientId'),
       clientSecret: configService.get('auth.facebook.secret'),
       callbackURL: configService.get('domain') + 'auth/redirect/facebook',
-      profileFields: ['id', 'email', 'name', 'picture'],
+      profileFields: ['id', 'email', 'name'],
       scope: ['email'],
     });
   }
 
   async validate(accessToken: string, refreshToken: string, profile: any, done: (error: any, user?: any, info?: any) => void): Promise<void> {
-    const { email, first_name, last_name, picture: { data: { url: picture = null } = {} } = {} } = {} = profile._json || {};
+    const { id, email, first_name, last_name } = {} = profile._json || {};
 
-    const existedUser = await this.userService.findOne({ where: { email } });
+    const existedUser = await this.userService.findOne({
+      where: { email },
+      select: ['id', 'email', 'password', 'type', 'firstName', 'lastName', 'picture', 'progress']
+    });
     if (existedUser) {
       return done(null, classToPlain(existedUser));
     }
@@ -31,8 +34,8 @@ export class FacebookStrategy extends PassportStrategy(Strategy, 'facebook') {
     done(null, {
       email,
       firstName: first_name,
-      lastName: last_name,
-      picture,
+      lastName: last_name === first_name ? null : last_name,
+      picture: `https://graph.facebook.com/${id}/picture?type=large`,
       isNew: true,
     });
   }

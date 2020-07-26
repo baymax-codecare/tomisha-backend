@@ -13,7 +13,7 @@ const options = {
 	username: process.env.TYPEORM_USERNAME,
 	password: process.env.TYPEORM_PASSWORD,
 	database: process.env.TYPEORM_DATABASE,
-  logging: process.env.LOG_VERBOSE === 'false' ? false : ['query', 'error'],
+  logging: ['query', 'error'],
   logger: 'advanced-console',
   entities: ['src/**/*.entity.ts'],
   options: {
@@ -35,7 +35,6 @@ for (const key of Object.keys(process.env)) {
 module.exports = [
   {
     name: 'default',
-    migrationsTableName: 'exMigrations',
     migrations: ['scripts/migrations/*.ts'],
     cli: {
       migrationsDir: 'scripts/migrations',

@@ -1,0 +1,6 @@
+export enum UserStatus {
+  AVAILABLE_ACTIVELY = 1,
+  AVAILABLE_EMPLOYED = 2,
+  AVAILABLE_PRIVATELY = 3,
+  UNAVAILABLE = 4,
+}

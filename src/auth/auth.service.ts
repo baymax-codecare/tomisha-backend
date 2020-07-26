@@ -7,7 +7,7 @@ import fetch from 'node-fetch';
 
 import { UserService } from '../user/user.service';
 import { compareHash, hash } from '../shared/utils';
-import { AuthUser } from './interface/auth-user.interface';
+import { AuthUser } from './type/auth-user.interface';
 import { ChangePasswordDto, ForgotPasswordDto, ResetPasswordDto, VerifyEmailDto, RegisterDto } from './dto';
 
 const FORGOT_PW_EXP_SEC = 24 * 60 * 60; // 1d
@@ -26,7 +26,7 @@ export class AuthService {
   public async validateUser(email: string, pass: string): Promise<AuthUser> {
     const user = await this.userService.findOne({
       where: { email: email?.toLowerCase?.().trim() },
-      select: ['id', 'email', 'password', 'type', 'firstName', 'lastName', 'gender'],
+      select: ['id', 'email', 'password', 'type', 'firstName', 'lastName', 'picture', 'progress'],
     });
     if (user && compareHash(pass, user.password)) {
       delete user.password;
@@ -49,7 +49,10 @@ export class AuthService {
   }
 
   public async getLoginCallbackUrl(user: any) {
-    return this.configService.get('auth.callbackHref') + `?token=${this.jwtService.sign(user)}&user=${JSON.stringify(user)}&expiresAt=${this.getExpDate(this.configService.get('auth.expiresIn'))}`;
+    const token = this.jwtService.sign(user);
+    const userStr = encodeURIComponent(JSON.stringify(user));
+    const expiresAt = encodeURIComponent(this.getExpDate(this.configService.get('auth.expiresIn')));
+    return this.configService.get('auth.callbackHref') + `?token=${token}&user=${userStr}&expiresAt=${expiresAt}`;
   }
 
   public async verifyEmail(verifyEmailDto: VerifyEmailDto): Promise<void> {
@@ -185,7 +188,7 @@ export class AuthService {
     const redisClient = await this.redisService.getClient();
     await redisClient.set(key, token, 'EX', exp);
 
-    const tokenUrl = `${callbackHref}?token=${token}&expiresAt=${encodeURI(this.getExpDate(FORGOT_PW_EXP_SEC))}`;
+    const tokenUrl = `${callbackHref}?token=${token}&expiresAt=${encodeURIComponent(this.getExpDate(FORGOT_PW_EXP_SEC))}`;
 
     return tokenUrl;
   }

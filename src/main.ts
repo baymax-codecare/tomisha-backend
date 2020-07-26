@@ -7,8 +7,6 @@ import * as helmet from 'helmet';
 import * as rateLimit from 'express-rate-limit';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 
-Object.assign(global, { __basedir: __dirname.replace(/\\/g, '/') });
-
 async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule, {
     logger: process.env.NODE_ENV === 'production'
@@ -51,7 +49,7 @@ async function bootstrap() {
     const options = new DocumentBuilder()
       .setTitle('TOMISHA')
       .setDescription('API description')
-      .setVersion('1.0')
+      .setVersion('0.1')
       .build();
     const document = SwaggerModule.createDocument(app, options);
     SwaggerModule.setup('doc', app, document);

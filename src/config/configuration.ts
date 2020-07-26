@@ -1,44 +1,46 @@
 import * as fs from 'fs';
+import { HandlebarsAdapter } from '@nestjs-modules/mailer/dist/adapters/handlebars.adapter';
 import { getMetadataArgsStorage } from 'typeorm';
 import { join } from 'path';
-import { HandlebarsAdapter } from '@nestjs-modules/mailer/dist/adapters/handlebars.adapter';
 
 export default () => {
-  const { __basedir } = global as any;
-
   const isProd = process.env.NODE_ENV === 'production';
+  const isDev = process.env.NODE_ENV === 'development';
+  const isStaging = process.env.NODE_ENV === 'staging';
 
   const TMP_UPLOAD_DIR_NAME = 'tmp';
   const ASSET_DIR_NAME = 'assets';
-  const UPLOAD_DIR = process.env.APP_UPLOAD_DIR || './public';
-  const uploadDir = UPLOAD_DIR.startsWith('.') ? join(__basedir, UPLOAD_DIR) : UPLOAD_DIR;
-  const assetDir = uploadDir + '/' + ASSET_DIR_NAME;
-  const tmpDir = uploadDir + '/' + TMP_UPLOAD_DIR_NAME;
+  const UPLOAD_DIR = process.env.APP_UPLOAD_DIR || 'public';
+  const assetDir = UPLOAD_DIR + '/' + ASSET_DIR_NAME;
+  const tmpDir = UPLOAD_DIR + '/' + TMP_UPLOAD_DIR_NAME;
 
-  try {
-    fs.readdirSync(UPLOAD_DIR);
-  } catch (_) {
-    throw new Error('APP_UPLOAD_DIR not found');
-  }
+  const webAppDomain = process.env.WEB_APP_DOMAIN;
 
-  fs.mkdir(assetDir, (): void => {});
-  fs.mkdir(tmpDir, (): void => {});
+  fs.mkdir(UPLOAD_DIR, (): void => {
+    fs.mkdir(assetDir, (): void => {});
+    fs.mkdir(tmpDir, (): void => {});
+  });
 
   return {
     isProd,
-    port: parseInt(process.env.APP_PORT, 10) || 7600,
+    isDev,
+    isStaging,
+    port: parseInt(process.env.APP_PORT, 10) || 3100,
     domain: process.env.APP_DOMAIN,
-    uploadDir,
+    webAppDomain,
+
+    uploadDir: UPLOAD_DIR,
     assetDir,
     assetDirName: ASSET_DIR_NAME,
     tmpDir,
     tmpDirName: TMP_UPLOAD_DIR_NAME,
+
     auth: {
       secret: process.env.AUTH_SECRET,
-      expiresIn: process.env.AUTH_EXPIRES_IN || '30d',
-      callbackHref: process.env.AUTH_CALLBACK_HREF,
-      verifiedHref: process.env.AUTH_VERIFIED_HREF,
-      resetPasswordHref: process.env.AUTH_RESET_PW_HREF,
+      expiresIn: +process.env.AUTH_EXPIRES_IN || 2592000,
+      callbackHref: webAppDomain + process.env.AUTH_CALLBACK_HREF,
+      verifiedHref: webAppDomain + process.env.AUTH_VERIFIED_HREF,
+      resetPasswordHref: webAppDomain + process.env.AUTH_RESET_PW_HREF,
       facebook: {
         clientId: process.env.AUTH_FB_CLIENT_ID,
         secret: process.env.AUTH_FB_SECRET,
@@ -54,14 +56,10 @@ export default () => {
       username: process.env.TYPEORM_USERNAME,
       password: process.env.TYPEORM_PASSWORD,
       database: process.env.TYPEORM_DATABASE,
-      logging: isProd ? ['error'] : ['query', 'error'],
+      logging: isDev ? ['query', 'error'] : ['error'],
       logger: 'advanced-console',
       entities: getMetadataArgsStorage().tables.map(tbl => tbl.target),
       synchronize: false,
-      // options: {
-      //   encrypt: false,
-      //   enableArithAbort: false,
-      // },
       autoLoadEntities: true,
     },
     redis: {

@@ -1,33 +1,22 @@
-import { Column, Entity, PrimaryGeneratedColumn, Index, BeforeInsert } from 'typeorm';
+import { Column, Entity, PrimaryGeneratedColumn, Index, BeforeInsert, OneToMany, ManyToMany, JoinTable } from 'typeorm';
 import { Exclude } from 'class-transformer';
+import { generate as generateSlug } from 'shortid';
+import { UserStatus } from './type/user-status.enum';
+import { UserType } from './type/user-type.enum';
+import { UserGender } from './type/user-gender.enum';
+import { UserMaritalStatus } from './type/user-marital-status.enum';
 import { hash } from '../shared/utils';
-import * as shortid from 'shortid';
-
-export enum UserType {
-  EMPLOYEE = 1,
-  EMPLOYER = 2,
-  AGENCY = 3,
-}
-
-export enum UserStatus {
-  READY = 1,
-  DISABLED = 0,
-}
-
-export enum UserGener {
-  MALE = 1,
-  FEMALE = 2,
-  OTHER = 3
-}
-
-export enum UserCivilStatus {
-  SINGLE = 1,
-  MARRIED = 2,
-  IN_A_RELATIONSHIP = 3,
-}
+import { Contact } from '../shared/entity/contact';
+import { UserDocument } from './user-document.entity';
+import { UserExperience } from './user-experience.entity';
+import { UserSkill } from './user-skill.entity';
+import { UserLanguage } from './user-language.entity';
+import { UserSchool } from './user-school.entity';
+import { UserTraining } from './user-training.entity';
+import { UserFile } from './user-file.entity';
 
 @Entity({ name: 'users' })
-export class User {
+export class User extends Contact {
   @PrimaryGeneratedColumn('uuid')
   public id: string;
 
@@ -46,71 +35,86 @@ export class User {
   @Column()
   public slug: string;
 
-  @Column({ nullable: true, default: false })
-  public verified: boolean;
+  @Column('smallint', { default: 0 })
+  public progress: number;
 
   @Index()
-  @Column('smallint', { default: UserStatus.READY })
+  @Column('smallint', { default: UserStatus.AVAILABLE_ACTIVELY })
   public status: UserStatus;
 
   @Column('smallint', { nullable: true })
-  public gender: UserGener;
+  public gender: UserGender;
 
   @Column('smallint', { nullable: true })
-  public civilStatus: UserCivilStatus;
+  public maritalStatus: UserMaritalStatus;
 
-  @Column({ nullable: true })
+  @Column({ nullable: true, length: 250 })
   public firstName: string;
 
-  @Column({ nullable: true })
+  @Column({ nullable: true, length: 250 })
   public lastName: string;
 
-  @Column({ nullable: true })
-  public phone: string;
+  @Column({ nullable: true, length: 250 })
+  public cover: string;
 
-  @Column({ nullable: true })
+  @Column({ nullable: true, length: 250 })
   public picture: string;
+
+  @Column({ nullable: true, length: 3 })
+  public country: string;
+
+  @Column({ nullable: true, length: 250 })
+  public street: string;
+
+  @Column({ nullable: true, length: 250 })
+  public city: string;
+
+  @Column({ nullable: true, length: 50 })
+  public postCode: string;
+
+  @Column({ nullable: true, length: 50 })
+  public phone: string;
 
   @Column('date', { nullable: true })
   public dob: Date;
 
-  @Column({ nullable: true })
-  public cover: string;
-
-  @Column({ nullable: true })
-  public coutry: string;
-
-  @Column({ nullable: true })
-  public city: string;
-
-  @Column({ nullable: true })
-  public street: string;
-
-  @Column({ nullable: true, length: 500 })
-  public address: string;
-
-  @Column({ nullable: true })
-  public postcode: string;
-
-  @Column({ nullable: true })
+  @Column({ nullable: true, length: 3 })
   public nationality: string;
 
-  @Column({ nullable: true })
+  @Column({ nullable: true, length: 500 })
   public pob: string;
 
-  @Column({ nullable: true })
-  public residentPermit: string;
+  @Column('smallint', { array: true, nullable: true })
+  public hobbies: number[];
 
-  @Column({ nullable: true })
-  public driveLicense: string;
+  @OneToMany(() => UserDocument, userDoc => userDoc.user, { cascade: true })
+  public documents: UserDocument[];
 
-  @Column()
-  public createdAt: Date;
+  @OneToMany(() => UserLanguage, userLang => userLang.user, { cascade: true })
+  public languages: UserLanguage[];
+
+  @OneToMany(() => UserSchool, userSchool => userSchool.user, { cascade: true })
+  public schools: UserTraining[];
+
+  @OneToMany(() => UserTraining, userTr => userTr.user, { cascade: true })
+  public trainings: UserTraining[];
+
+  @OneToMany(() => UserSkill, userSkill => userSkill.user, { cascade: true })
+  public skills: UserSkill[];
+
+  @OneToMany(() => UserExperience, userExp => userExp.user, { cascade: true })
+  public experiences: UserExperience[];
+
+  @OneToMany(() => UserFile, userFile => userFile.user, { cascade: true })
+  public files: UserFile[];
+
+  @ManyToMany(() => User)
+  @JoinTable()
+  public references: User[];
 
   @BeforeInsert()
   public beforeInsert(): void {
-    this.createdAt = new Date();
     this.password = hash(this.password);
-    this.slug = shortid.generate();
+    this.slug = generateSlug();
   }
 }
