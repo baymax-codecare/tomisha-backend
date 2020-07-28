@@ -93,11 +93,11 @@ export class AuthService {
   public async registerLocal(registerDto: RegisterDto): Promise<any> {
     const { password, token, captcha } = registerDto;
 
-    const recaptchaUrl = `https://www.google.com/recaptcha/api/siteverify?secret=${this.configService.get('recaptcha.secret')}&response=${captcha}`;
-    const recaptchaResponse = await fetch(recaptchaUrl, { method: 'post' });
-    const json = await recaptchaResponse.json();
+    const hcaptchaUrl = `https://hcaptcha.com/siteverify?secret=${this.configService.get('hcaptcha.secret')}&response=${captcha}`;
+    const hcaptchaResponse = await fetch(hcaptchaUrl, { method: 'post' });
+    const json = await hcaptchaResponse.json();
     if (!json.success) {
-      throw new BadRequestException('reCaptcha verification fail');
+      throw new BadRequestException('hCaptcha verification fail');
     }
 
     const newUser = await this.validateToken(token, 'email', this.genVerifyEmailKey, (decoded) => {;
