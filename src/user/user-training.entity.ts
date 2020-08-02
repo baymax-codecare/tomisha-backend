@@ -1,8 +1,8 @@
 import { Entity, PrimaryGeneratedColumn, Column } from 'typeorm';
-import { UserActity } from '../shared/entity/user-activity';
+import { UserActivity } from '../shared/entity/user-activity';
 
 @Entity({ name: 'user-trainings' })
-export class UserTraining extends UserActity {
+export class UserTraining extends UserActivity {
   @PrimaryGeneratedColumn('uuid')
   public id: string;
 

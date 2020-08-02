@@ -14,6 +14,7 @@ import { UserLanguage } from './user-language.entity';
 import { UserSchool } from './user-school.entity';
 import { UserTraining } from './user-training.entity';
 import { UserFile } from './user-file.entity';
+import { UserCompany } from 'src/user-company/user-company.entity';
 
 @Entity({ name: 'users' })
 export class User extends Contact {
@@ -111,6 +112,9 @@ export class User extends Contact {
   @ManyToMany(() => User)
   @JoinTable()
   public references: User[];
+
+  @OneToMany(() => UserCompany, userComp => userComp.user, { cascade: true })
+  public userCompanies: UserCompany[];
 
   @BeforeInsert()
   public beforeInsert(): void {

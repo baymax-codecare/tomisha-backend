@@ -1,13 +1,13 @@
 import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, JoinColumn } from 'typeorm';
-import { User } from './user.entity';
+import { Occupation } from './occupation.entity';
 
-@Entity({ name: 'user-skills' })
-export class UserSkill {
+@Entity({ name: 'occupation-skills' })
+export class OccupationSkill {
   @PrimaryGeneratedColumn('uuid')
   public id: string;
 
   @Column('uuid')
-  public userId: string;
+  public occupationId: string;
 
   @Column('smallint')
   public skillId: number;
@@ -15,7 +15,7 @@ export class UserSkill {
   @Column('smallint')
   public level: number;
 
-  @ManyToOne(() => User, user => user.skills, { onDelete: 'CASCADE' })
+  @ManyToOne(() => Occupation, occu => occu.preferences, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'userId' })
-  public user: User;
+  public occupation: Occupation;
 }

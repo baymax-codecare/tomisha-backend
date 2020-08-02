@@ -17,7 +17,10 @@ export class UserDocument {
   public type: number;
 
   @Column({ length: 250, nullable: true })
-  public url: string;
+  public front: string;
+
+  @Column({ length: 250, nullable: true })
+  public back: string;
 
   @ManyToOne(() => User, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'userId' })

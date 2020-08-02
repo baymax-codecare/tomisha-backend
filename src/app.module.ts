@@ -16,6 +16,8 @@ import { AuthModule } from './auth/auth.module';
 import { UserModule } from './user/user.module';
 import { AssetModule } from './asset/asset.module';
 import { GlobalJwtModule } from './shared/jwt.module';
+import { OccupationModule } from './occupation/occupation.module';
+import { CompanyModule } from './company/company.module';
 
 @Module({
   imports: [
@@ -64,6 +66,10 @@ import { GlobalJwtModule } from './shared/jwt.module';
     UserModule,
 
     AssetModule,
+
+    OccupationModule,
+
+    CompanyModule,
   ],
 
   providers: [
