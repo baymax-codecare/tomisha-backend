@@ -14,7 +14,7 @@ export class UserController {
 
   @UseGuards(JwtAuthGuard)
   @Get('search')
-  public getMe(@Query() searchUserDto: SearchUserDto): Promise<User[]> {
+  public search(@Query() searchUserDto: SearchUserDto): Promise<User[]> {
     return this.userService.search(searchUserDto);
   }
 

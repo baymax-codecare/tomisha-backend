@@ -1,4 +1,4 @@
-import { IsEnum, IsString, IsOptional, Length, IsDateString, IsArray, IsInt } from 'class-validator';
+import { IsEnum, IsString, IsOptional, Length, IsDateString, IsArray, IsInt, MaxLength } from 'class-validator';
 import { UserType } from '../type/user-type.enum';
 import { UserStatus } from '../type/user-status.enum';
 import { UserGender } from '../type/user-gender.enum';
@@ -44,12 +44,12 @@ export class PatchMeDto {
   public lastName: string;
 
   @IsString()
-  @Length(1, 250)
+  @MaxLength(250)
   @IsOptional()
   public cover: string;
 
   @IsString()
-  @Length(1, 250)
+  @MaxLength(250)
   @IsOptional()
   public picture: string;
 
@@ -76,7 +76,7 @@ export class PatchMeDto {
   @IsString()
   @Length(1, 50)
   @IsOptional()
-  public postCode: string;
+  public zip: string;
 
   @IsString()
   @Length(1, 50)

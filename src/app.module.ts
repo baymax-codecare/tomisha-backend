@@ -18,6 +18,9 @@ import { AssetModule } from './asset/asset.module';
 import { GlobalJwtModule } from './shared/jwt.module';
 import { OccupationModule } from './occupation/occupation.module';
 import { CompanyModule } from './company/company.module';
+import { CompanyLocationModule } from './company-location/company-location.module';
+import { CompanyUserModule } from './company-user/company-user.module.';
+import { VerificationModule } from './verification/verification.module';
 
 @Module({
   imports: [
@@ -70,6 +73,12 @@ import { CompanyModule } from './company/company.module';
     OccupationModule,
 
     CompanyModule,
+
+    CompanyLocationModule,
+
+    CompanyUserModule,
+
+    VerificationModule,
   ],
 
   providers: [

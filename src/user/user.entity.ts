@@ -14,7 +14,7 @@ import { UserLanguage } from './user-language.entity';
 import { UserSchool } from './user-school.entity';
 import { UserTraining } from './user-training.entity';
 import { UserFile } from './user-file.entity';
-import { UserCompany } from 'src/user-company/user-company.entity';
+import { CompanyUser } from 'src/company-user/company-user.entity';
 
 @Entity({ name: 'users' })
 export class User extends Contact {
@@ -71,7 +71,7 @@ export class User extends Contact {
   public city: string;
 
   @Column({ nullable: true, length: 50 })
-  public postCode: string;
+  public zip: string;
 
   @Column({ nullable: true, length: 50 })
   public phone: string;
@@ -113,8 +113,8 @@ export class User extends Contact {
   @JoinTable()
   public references: User[];
 
-  @OneToMany(() => UserCompany, userComp => userComp.user, { cascade: true })
-  public userCompanies: UserCompany[];
+  @OneToMany(() => CompanyUser, userComp => userComp.user, { cascade: true })
+  public companyUsers: CompanyUser[];
 
   @BeforeInsert()
   public beforeInsert(): void {

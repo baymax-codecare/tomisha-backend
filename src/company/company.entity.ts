@@ -2,8 +2,8 @@ import { Entity, PrimaryGeneratedColumn, Column, Index, BeforeInsert, OneToMany 
 import { generate as generateSlug } from 'shortid';
 import { CompanyStatus } from './type/company-status.enum';
 import { EntityTimestamp } from 'src/shared/entity/timestamp';
-import { CompanyLocation } from './company-location.entity';
-import { UserCompany } from 'src/user-company/user-company.entity';
+import { CompanyLocation } from '../company-location/company-location.entity';
+import { CompanyUser } from 'src/company-user/company-user.entity';
 
 @Entity({ name: 'companies' })
 export class Company extends EntityTimestamp {
@@ -47,20 +47,20 @@ export class Company extends EntityTimestamp {
   @Column('date', { nullable: true })
   public foundedAt: Date;
 
-  @Column('smallint', { nullable: true })
+  @Column({ nullable: true })
   public size: number;
 
-  @Column('smallint', { nullable: true })
+  @Column({ nullable: true })
   public totalPermanents: number;
 
-  @Column('smallint', { nullable: true })
+  @Column({ nullable: true })
   public totalInterns: number;
 
   @OneToMany(() => CompanyLocation, companyLoc => companyLoc.company, { cascade: true })
   public locations: CompanyLocation[];
 
-  @OneToMany(() => UserCompany, userComp => userComp.company, { cascade: true })
-  public userCompanies: UserCompany[];
+  @OneToMany(() => CompanyUser, userComp => userComp.company, { cascade: true })
+  public companyUsers: CompanyUser[];
 
   @BeforeInsert()
   public beforeInsert(): void {

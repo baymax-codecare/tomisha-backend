@@ -1,16 +1,21 @@
 import { Transform } from 'class-transformer';
 import { IsString, Length, IsOptional, IsEmail } from 'class-validator';
 
-export class SearchUserDto {
+export class SearchCompanyDto {
   @IsString()
-  @Length(1, 250)
+  @Length(1, 3)
   @IsOptional()
-  public firstName?: string;
+  public country?: string;
+
+  @IsString()
+  @Length(1, 50)
+  @IsOptional()
+  public zip?: string;
 
   @IsString()
   @Length(1, 250)
   @IsOptional()
-  public lastName?: string;
+  public city?: string;
 
   @IsString()
   @Length(1, 50)
@@ -21,9 +26,4 @@ export class SearchUserDto {
   @IsEmail()
   @IsOptional()
   public email?: string;
-
-  @Transform(v => typeof v === 'string' ? v.toLowerCase().trim() : v)
-  @IsEmail()
-  @IsOptional()
-  public businessEmail?: string;
 }

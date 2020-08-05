@@ -1,6 +1,6 @@
-import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, JoinColumn, Index, BeforeInsert } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, JoinColumn } from 'typeorm';
 import { Contact } from 'src/shared/entity/contact';
-import { Company } from './company.entity';
+import { Company } from '../company/company.entity';
 
 @Entity({ name: 'company-locations' })
 export class CompanyLocation extends Contact {

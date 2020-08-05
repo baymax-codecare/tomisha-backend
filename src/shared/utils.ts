@@ -8,7 +8,7 @@ export function compareHash(str1: string, str2: string) {
   return bcrypt.compareSync(str1, str2);
 }
 
-export function filterObject (obj = {}, filter = Boolean) {
+export function filterObject(obj = {}, filter = Boolean) {
   const output = {};
   for (const key in obj) {
     if (filter(obj[key])) {
@@ -16,4 +16,8 @@ export function filterObject (obj = {}, filter = Boolean) {
     }
   }
   return output;
+}
+
+export function getExpiresAt(sec: number): string {
+  return new Date(Date.now() + sec * 1000).toUTCString();
 }

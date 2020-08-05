@@ -2,16 +2,19 @@ import { Injectable, BadRequestException, InternalServerErrorException } from '@
 import { JwtService } from '@nestjs/jwt';
 import { MailerService } from '@nestjs-modules/mailer';
 import { ConfigService } from '@nestjs/config';
-import { RedisService } from 'nestjs-redis';
 import fetch from 'node-fetch';
 
 import { UserService } from '../user/user.service';
-import { compareHash, hash } from '../shared/utils';
+import { compareHash, hash, getExpiresAt } from '../shared/utils';
 import { AuthUser } from './type/auth-user.interface';
 import { ChangePasswordDto, ForgotPasswordDto, ResetPasswordDto, VerifyEmailDto, RegisterDto } from './dto';
+import { VerificationService } from 'src/verification/verification.service';
 
 const FORGOT_PW_EXP_SEC = 24 * 60 * 60; // 1d
 const VERIFY_EMAIL_EXP_SEC = 24 * 60 * 60; // 1d
+
+const EMAIL_TOKEN_KEY_PREFIX = 'vrf';
+const FORGOT_PW_TOKEN_KEY_PREFIX = 'pw';
 
 @Injectable()
 export class AuthService {
@@ -19,8 +22,8 @@ export class AuthService {
     private userService: UserService,
     private jwtService: JwtService,
     private mailerService: MailerService,
-    private redisService: RedisService,
     private configService: ConfigService,
+    private verificationService: VerificationService,
   ) {}
 
   public async validateUser(email: string, pass: string): Promise<AuthUser> {
@@ -44,14 +47,14 @@ export class AuthService {
         email: user.email,
         type: user.type,
       }),
-      expiresAt: this.getExpDate(this.configService.get('auth.expiresIn')),
+      expiresAt: getExpiresAt(this.configService.get('auth.expiresIn')),
     };
   }
 
   public async getLoginCallbackUrl(user: any) {
     const token = this.jwtService.sign(user);
     const userStr = encodeURIComponent(JSON.stringify(user));
-    const expiresAt = encodeURIComponent(this.getExpDate(this.configService.get('auth.expiresIn')));
+    const expiresAt = encodeURIComponent(getExpiresAt(this.configService.get('auth.expiresIn')));
     return this.configService.get('auth.callbackHref') + `?token=${token}&user=${userStr}&expiresAt=${expiresAt}`;
   }
 
@@ -62,12 +65,6 @@ export class AuthService {
       throw new BadRequestException('Email is already in use');
     }
 
-    const tokenUrl = await this.createVerifyEmailTokenUrl({
-      email,
-      firstName,
-      lastName,
-    });
-
     await this.mailerService.sendMail({
       to: email,
       subject: 'Bitte bestätige deine E-Mail-Adresse',
@@ -75,18 +72,23 @@ export class AuthService {
       context: {
         firstName,
         lastName,
-        tokenUrl,
         expHours: Math.round(VERIFY_EMAIL_EXP_SEC / 3600),
+        tokenUrl: await this.createVerifyEmailTokenUrl({
+          email,
+          firstName,
+          lastName,
+        }),
       },
     });
   }
 
   public createVerifyEmailTokenUrl(payload: any): Promise<string> {
-    return this.createTokenUrl({
-      key: this.genVerifyEmailKey(payload.email),
+    return this.verificationService.createTokenUrl({
+      prefix: EMAIL_TOKEN_KEY_PREFIX,
+      key: payload.email,
       payload,
-      exp: VERIFY_EMAIL_EXP_SEC,
-      callbackHref: this.configService.get('auth.verifiedHref'),
+      expiresIn: VERIFY_EMAIL_EXP_SEC,
+      callbackHref: this.configService.get('auth.verifiedHref')
     })
   }
 
@@ -100,14 +102,18 @@ export class AuthService {
       throw new BadRequestException('hCaptcha verification fail');
     }
 
-    const newUser = await this.validateToken(token, 'email', this.genVerifyEmailKey, (decoded) => {;
-      return this.userService.create({
-        email: decoded.email,
-        password,
-        firstName: decoded.firstName,
-        lastName: decoded.lastName,
-        picture: decoded.picture,
-      });
+    const tokenPayload = await this.verificationService.validateToken({
+      prefix: EMAIL_TOKEN_KEY_PREFIX,
+      decodedKey: 'email',
+      token,
+    });
+
+    const newUser = await this.userService.create({
+      password,
+      email: tokenPayload.email,
+      firstName: tokenPayload.firstName,
+      lastName: tokenPayload.lastName,
+      picture: tokenPayload.picture,
     });
 
     delete newUser.password;
@@ -137,13 +143,14 @@ export class AuthService {
       return;
     }
 
-    const tokenUrl = await this.createTokenUrl({
-      key: this.genForgotPasswordKey(user.id),
+    const tokenUrl = await this.verificationService.createTokenUrl({
+      prefix: FORGOT_PW_TOKEN_KEY_PREFIX,
+      key: user.id,
       payload: {
         id: user.id,
         email: user.email,
       },
-      exp: FORGOT_PW_EXP_SEC,
+      expiresIn: FORGOT_PW_EXP_SEC,
       callbackHref: this.configService.get('auth.resetPasswordHref'),
     });
 
@@ -166,62 +173,14 @@ export class AuthService {
   public async resetPassword(resetPasswordDto: ResetPasswordDto): Promise<void> {
     const { token, newPassword } = resetPasswordDto;
 
-    const redisClient = await this.redisService.getClient();
-    const decoded = this.jwtService.verify(token);
-    const key = this.genForgotPasswordKey(decoded.id);
-    const savedToken = await redisClient.get(key);
-    if (!decoded || !decoded.id || !savedToken || token !== savedToken) {
-      throw new BadRequestException('Reset password URL is invalid or has been expired');
-    }
-
-    await this.validateToken(token, 'id', this.genForgotPasswordKey, (decoded) => {;
-      return this.userService.update(decoded.id, {
-        password: hash(newPassword),
-      });
+    const tokenPayload = await this.verificationService.validateToken({
+      prefix: FORGOT_PW_TOKEN_KEY_PREFIX,
+      decodedKey: 'id',
+      token,
     });
-  }
 
-  private async createTokenUrl(opts: any) {
-    const { key, payload, exp = 86400, callbackHref } = opts;
-    const token = this.jwtService.sign(payload, { expiresIn: exp, noTimestamp: true });
-
-    const redisClient = await this.redisService.getClient();
-    await redisClient.set(key, token, 'EX', exp);
-
-    const tokenUrl = `${callbackHref}?token=${token}&expiresAt=${encodeURIComponent(this.getExpDate(FORGOT_PW_EXP_SEC))}`;
-
-    return tokenUrl;
-  }
-
-  private getExpDate(exp) {
-    return new Date(Date.now() + exp * 1000).toUTCString();
-  }
-
-  private async validateToken(token: string, key: string, makeKey: (id: string) => string, cb: Function) {
-    const decoded = this.jwtService.verify(token);
-
-    if (decoded?.[key]) {
-      const savedKey = makeKey(decoded[key]);
-      const redisClient = await this.redisService.getClient();
-      const savedToken = await redisClient.get(savedKey);
-
-      if (savedToken === token) {
-        const output = await cb(decoded);
-
-        redisClient.del(savedKey);
-
-        return output
-      }
-    }
-
-    throw new BadRequestException('The token URL is invalid or has been expired');
-  }
-
-  private genForgotPasswordKey(id: string) {
-    return `pw:${id}`;
-  }
-
-  private genVerifyEmailKey(email: string) {
-    return `vrf:${email}`;
+    await this.userService.update(tokenPayload.id, {
+      password: hash(newPassword),
+    });
   }
 }

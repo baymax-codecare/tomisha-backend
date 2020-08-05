@@ -15,5 +15,5 @@ export abstract class Contact extends EntityTimestamp {
   public city: string;
 
   @Column({ nullable: true, length: 50 })
-  public postCode: string;
+  public zip: string;
 }

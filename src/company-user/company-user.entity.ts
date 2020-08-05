@@ -2,10 +2,10 @@ import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, JoinColumn, Index } 
 import { User } from 'src/user/user.entity';
 import { Company } from 'src/company/company.entity';
 
-@Entity({ name: 'user-companies' })
-export class UserCompany {
-  @PrimaryGeneratedColumn()
-  public id: number;
+@Entity({ name: 'company-users' })
+export class CompanyUser {
+  @PrimaryGeneratedColumn('uuid')
+  public id: string;
 
   @Index()
   @Column('uuid', { nullable: true })
@@ -18,11 +18,11 @@ export class UserCompany {
   @Column('smallint', { array: true, nullable: true })
   public rights: number[];
 
-  @ManyToOne(() => Company, company => company.userCompanies, { onDelete: 'CASCADE' })
+  @ManyToOne(() => Company, company => company.companyUsers, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'companyId' })
   public company: Company;
 
-  @ManyToOne(() => User, user => user.userCompanies, { onDelete: 'CASCADE' })
+  @ManyToOne(() => User, user => user.companyUsers, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'userId' })
   public user: User;
 }
