@@ -34,6 +34,14 @@ export class UserService {
         'experiences',
         'references',
         'files',
+        'languages.company',
+        'languages.company.locations',
+        'schools.company',
+        'schools.company.locations',
+        'trainings.company',
+        'trainings.company.locations',
+        'experiences.company',
+        'experiences.company.locations',
       ],
     });
   }

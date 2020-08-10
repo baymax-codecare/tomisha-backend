@@ -109,11 +109,29 @@ export class CompanyService {
   }
 
   public search(searchCompanyDto: SearchCompanyDto): Promise<Company[]> {
-    return this.companyRepository.find({
-      where: searchCompanyDto,
-      select: ['id', 'name', 'picture', 'slug'],
-      relations: ['locations', 'companyUsers'],
-      take: 5,
-    });
+    const { country, zip, city, name, ...where } = searchCompanyDto;
+    const qb = this.companyRepository
+      .createQueryBuilder('c')
+      .leftJoin('c.locations', 'loc')
+
+    for (const key of Object.keys(where)) {
+      qb.andWhere(`c.${key} = :${key}`, { [key]: where[key] });
+    }
+
+    if (name) {
+      qb.andWhere('c.name LIKE :name', { name: `%${name}%` });
+    }
+
+    if (country && zip && city) {
+      qb
+        .andWhere('loc.country = :country', { country })
+        .andWhere('loc.zip = :zip', { zip })
+        .andWhere('loc.city = :city', { city });
+    }
+
+    return qb
+      .select(['c', 'loc'])
+      .take(5)
+      .getMany();
   }
 }
