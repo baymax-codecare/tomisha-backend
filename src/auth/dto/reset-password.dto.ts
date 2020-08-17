@@ -1,4 +1,4 @@
-import { IsNotEmpty, IsString, Length } from "class-validator";
+import { IsNotEmpty, IsString, Length, IsJWT } from "class-validator";
 
 export class ResetPasswordDto {
   @IsString()
@@ -6,6 +6,7 @@ export class ResetPasswordDto {
   public newPassword: string;
 
   @IsString()
+  @IsJWT()
   @IsNotEmpty()
   public token: string;
 }

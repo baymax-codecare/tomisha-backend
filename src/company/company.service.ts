@@ -1,4 +1,4 @@
-import { Injectable, BadRequestException } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { MailerService } from '@nestjs-modules/mailer';
 import { ConfigService } from '@nestjs/config';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -26,6 +26,16 @@ export class CompanyService {
     private verificationService: VerificationService,
   ) {}
 
+  public async findMyCompanies(userId: string): Promise<Company[]> {
+    return this.companyRepository
+      .createQueryBuilder('c')
+      .innerJoin('c.companyUsers', 'cu')
+      .innerJoin('c.locations', 'loc')
+      .where('cu.userId = :userId', { userId })
+      .select(['c', 'loc'])
+      .getMany();
+  }
+
   public async findOne(findCompanyDto: FindCompanyDto): Promise<Company> {
     const { id, slug, userId } = findCompanyDto;
     if (id || slug) {
@@ -35,12 +45,12 @@ export class CompanyService {
       });
     } else {
       const company = await this.companyRepository
-        .createQueryBuilder('q')
-        .leftJoin('q.locations', 'loc')
-        .innerJoin('q.companyUsers', 'cu')
+        .createQueryBuilder('c')
+        .leftJoin('c.locations', 'loc')
+        .innerJoin('c.companyUsers', 'cu')
         .innerJoin('cu.user', 'user')
         .where('cu.userId = :userId', { userId })
-        .select(['q', 'loc', 'cu', 'user.id', 'user.email', 'user.picture', 'user.firstName', 'user.lastName', 'user.street'])
+        .select(['c', 'loc', 'cu', 'user.id', 'user.email', 'user.picture', 'user.firstName', 'user.lastName', 'user.street'])
         .getOne();
       return company;
     }

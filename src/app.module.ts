@@ -21,6 +21,8 @@ import { CompanyModule } from './company/company.module';
 import { CompanyLocationModule } from './company-location/company-location.module';
 import { CompanyUserModule } from './company-user/company-user.module.';
 import { VerificationModule } from './verification/verification.module';
+import { JobModule } from './job/job.module';
+import { ApplicationModule } from './application/application.module';
 
 @Module({
   imports: [
@@ -79,6 +81,10 @@ import { VerificationModule } from './verification/verification.module';
     CompanyUserModule,
 
     VerificationModule,
+
+    JobModule,
+
+    ApplicationModule,
   ],
 
   providers: [

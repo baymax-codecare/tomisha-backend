@@ -19,6 +19,12 @@ export class CompanyController {
   }
 
   @UseGuards(JwtAuthGuard)
+  @Get('me')
+  public findMyCompanies(@Req() req): Promise<Company[]> {
+    return this.companyService.findMyCompanies(req.user.id);
+  }
+
+  @UseGuards(JwtAuthGuard)
   @Post()
   public createCompany(@Body() createCompanyDto: CreateCompanyDto, @Req() req): Promise<Company> {
     return this.companyService.create(req.user, createCompanyDto);

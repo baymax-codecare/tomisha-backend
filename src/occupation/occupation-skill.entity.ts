@@ -15,7 +15,7 @@ export class OccupationSkill {
   @Column('smallint')
   public level: number;
 
-  @ManyToOne(() => Occupation, occu => occu.preferences, { onDelete: 'CASCADE' })
-  @JoinColumn({ name: 'userId' })
+  @ManyToOne(() => Occupation, occu => occu.skills, { onDelete: 'CASCADE' })
+  @JoinColumn({ name: 'occupationId' })
   public occupation: Occupation;
 }

@@ -15,116 +15,116 @@ import { UserFile } from '../user-file.entity';
 export class PatchMeDto {
   @IsInt()
   @IsOptional()
-  public progress: number;
+  public progress?: number;
 
   @IsEnum(UserType)
   @IsOptional()
-  public type: UserType;
+  public type?: UserType;
 
   @IsEnum(UserStatus)
   @IsOptional()
-  public status: UserStatus;
+  public status?: UserStatus;
 
   @IsEnum(UserGender)
   @IsOptional()
-  public gender: UserGender;
+  public gender?: UserGender;
 
   @IsEnum(UserMaritalStatus)
   @IsOptional()
-  public maritalStatus: UserMaritalStatus;
+  public maritalStatus?: UserMaritalStatus;
 
   @IsString()
   @Length(1, 250)
   @IsOptional()
-  public firstName: string;
+  public firstName?: string;
 
   @IsString()
   @Length(1, 250)
   @IsOptional()
-  public lastName: string;
+  public lastName?: string;
 
   @IsString()
   @MaxLength(250)
   @IsOptional()
-  public cover: string;
+  public cover?: string;
 
   @IsString()
   @MaxLength(250)
   @IsOptional()
-  public picture: string;
+  public picture?: string;
 
   @IsString()
   @Length(1, 3)
   @IsOptional()
-  public country: string;
+  public country?: string;
 
   @IsString()
   @Length(1, 3)
   @IsOptional()
-  public nationality: string;
+  public nationality?: string;
 
   @IsString()
   @Length(1, 250)
   @IsOptional()
-  public street: string;
+  public street?: string;
 
   @IsString()
   @Length(1, 250)
   @IsOptional()
-  public city: string;
+  public city?: string;
 
   @IsString()
   @Length(1, 50)
   @IsOptional()
-  public zip: string;
+  public zip?: string;
 
   @IsString()
   @Length(1, 50)
   @IsOptional()
-  public phone: string;
+  public phone?: string;
 
   @IsString()
   @Length(1, 250)
   @IsOptional()
-  public pob: string;
+  public pob?: string;
 
   @IsDateString()
   @IsOptional()
-  public dob: string;
+  public dob?: string;
 
   @IsArray()
   @IsOptional()
-  public hobbies: number[];
+  public hobbies?: number[];
 
   @IsArray()
   @IsOptional()
-  public documents: UserDocument[];
+  public documents?: UserDocument[];
 
   @IsArray()
   @IsOptional()
-  public languages: UserLanguage[];
+  public languages?: UserLanguage[];
 
   @IsArray()
   @IsOptional()
-  public schools: UserSchool[];
+  public schools?: UserSchool[];
 
   @IsArray()
   @IsOptional()
-  public trainings: UserTraining[];
+  public trainings?: UserTraining[];
 
   @IsArray()
   @IsOptional()
-  public skills: UserSkill[];
+  public skills?: UserSkill[];
 
   @IsArray()
   @IsOptional()
-  public experiences: UserExperience[];
+  public experiences?: UserExperience[];
 
   @IsArray()
   @IsOptional()
-  public files: UserFile[];
+  public files?: UserFile[];
 
   @IsArray()
   @IsOptional()
-  public references: User[];
+  public references?: User[];
 }
