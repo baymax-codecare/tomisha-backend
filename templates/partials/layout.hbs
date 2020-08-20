@@ -3,7 +3,6 @@
 <head>
   <meta name="viewport" content="width=device-width" />
   <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
-  <title>Andreas Zimmerman bittet um Referenz Bestätigung</title>
   <style>
     body {
       font-size: 21px;
@@ -82,42 +81,30 @@
 </head>
 
 <body>
-  <h1 class="mb-xl">tomisha</h1>
+  <header class="mb-xl">
+    <h1>tomisha</h1>
+  </header>
 
-  <p class="message mb-md">
-    Hallo {{firstName}} {{lastName}},
-    <br />
-    <br />
-    du hast eine Anfrage von Bujar Islami erhalten für eine Referenzbestätigung.
-  </p>
+  <main class="mb-xl">
+    {{> content}}
+  </main>
 
-  <div class="card mb-md">
-    <div class="avatar">
-      <img src="{{picture}}" />
-    </div>
-    <div class="body">
-      <div class="card-title">{{invitor}}</div>
-    </div>
-  </div>
+  <footer>
+    <p class="sender mb-md">
+      Danke!<br />
+      Dein Tomisha-Team
+    </p>
 
-  <a href="{{tokenUrl}}" target="_blank" class="btn mb-lg">
-    Referenz bestätigen
-  </a>
+    <hr class="mb-md">
 
-  <p class="sender mb-md">
-    Danke!<br />
-    Dein Tomisha-Team
-  </p>
-
-  <hr class="mb-md">
-
-  <p class="small">
-    Copyright © 2020 Tomisha. Alle Rechte vorbehalten.
-    <br />
-    <br />
-    Mit ❤ von Tomisha versendet<br />
-    Tomisha, Thomas Hungerbühler,<br />
-    Brühlbergstrasse 11, 8400 Winterthur, Schweiz
-  </p>
+    <p class="small">
+      Copyright © 2020 Tomisha. Alle Rechte vorbehalten.
+      <br />
+      <br />
+      Mit ❤ von Tomisha versendet<br />
+      Tomisha, Thomas Hungerbühler,<br />
+      Brühlbergstrasse 11, 8400 Winterthur, Schweiz
+    </p>
+  </footer>
 </body>
 </html>

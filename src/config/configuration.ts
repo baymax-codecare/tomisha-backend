@@ -84,10 +84,15 @@ export default () => {
       },
       preview: true,
       template: {
-        dir: join(process.cwd(), 'templates'),
+        dir: join(process.cwd(), 'templates/pages'),
         adapter: new HandlebarsAdapter(),
         options: {
           strict: true,
+        },
+      },
+      options: {
+        partials: {
+          dir: join(process.cwd(), 'templates/partials'),
         },
       },
     },
