@@ -1,10 +1,10 @@
 import { Entity, Column, PrimaryGeneratedColumn, BeforeInsert, ManyToOne, JoinColumn } from 'typeorm';
-import { generate as generateSlug } from 'shortid';
 import { EntityTimestamp } from 'src/shared/entity/timestamp';
 import { User } from 'src/user/user.entity';
 import { Job } from 'src/job/job.entity';
 import { Occupation } from 'src/occupation/occupation.entity';
 import { Company } from 'src/company/company.entity';
+import { generateSlug } from 'src/shared/utils';
 
 @Entity({ name: 'applications' })
 export class Application extends EntityTimestamp {

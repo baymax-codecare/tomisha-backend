@@ -1,11 +1,10 @@
 import { Column, Entity, PrimaryGeneratedColumn, Index, BeforeInsert, OneToMany, ManyToMany, JoinTable } from 'typeorm';
 import { Exclude } from 'class-transformer';
-import { generate as generateSlug } from 'shortid';
 import { UserStatus } from './type/user-status.enum';
 import { UserType } from './type/user-type.enum';
 import { UserGender } from './type/user-gender.enum';
 import { UserMaritalStatus } from './type/user-marital-status.enum';
-import { hash } from '../shared/utils';
+import { hash, generateSlug } from '../shared/utils';
 import { Contact } from '../shared/entity/contact';
 import { UserDocument } from './user-document.entity';
 import { UserExperience } from './user-experience.entity';

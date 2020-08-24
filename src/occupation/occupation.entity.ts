@@ -1,10 +1,10 @@
 import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, JoinColumn, OneToMany, BeforeInsert } from 'typeorm';
-import { generate as generateSlug } from 'shortid';
 import { User } from '../user/user.entity';
 import { OccupationPreference } from './occupation-preference.entity';
 import { OccupationSkill } from './occupation-skill.entity';
 import { OccupationExperience } from './occupation-expereience.entity';
 import { EntityTimestamp } from 'src/shared/entity/timestamp';
+import { generateSlug } from 'src/shared/utils';
 
 @Entity({ name: 'occupations' })
 export class Occupation extends EntityTimestamp {

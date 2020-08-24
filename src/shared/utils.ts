@@ -21,3 +21,7 @@ export function filterObject(obj = {}, filter = Boolean) {
 export function getExpiresAt(sec: number): string {
   return new Date(Date.now() + sec * 1000).toUTCString();
 }
+
+export function generateSlug() {
+  return Math.round(Date.now() + Math.random() * 100000) + '';
+}

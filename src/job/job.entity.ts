@@ -1,5 +1,4 @@
 import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, JoinColumn, OneToMany, ManyToMany, JoinTable, BeforeInsert, Index } from 'typeorm';
-import { generate as generateSlug } from 'shortid';
 import { EntityTimestamp } from 'src/shared/entity/timestamp';
 import { User } from '../user/user.entity';
 import { JobProfession } from './job-profession.entity';
@@ -8,6 +7,7 @@ import { CompanyUser } from 'src/company-user/company-user.entity';
 import { Company } from 'src/company/company.entity';
 import { JobSkill } from './job-skill.entity';
 import { JobStatus } from './type/JobStatus.enum';
+import { generateSlug } from 'src/shared/utils';
 
 @Entity({ name: 'jobs' })
 export class Job extends EntityTimestamp {

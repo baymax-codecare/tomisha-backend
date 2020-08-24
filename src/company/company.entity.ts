@@ -1,9 +1,9 @@
 import { Entity, PrimaryGeneratedColumn, Column, Index, BeforeInsert, OneToMany } from 'typeorm';
-import { generate as generateSlug } from 'shortid';
 import { CompanyStatus } from './type/company-status.enum';
 import { EntityTimestamp } from 'src/shared/entity/timestamp';
 import { CompanyLocation } from '../company-location/company-location.entity';
 import { CompanyUser } from 'src/company-user/company-user.entity';
+import { generateSlug } from 'src/shared/utils';
 
 @Entity({ name: 'companies' })
 export class Company extends EntityTimestamp {
