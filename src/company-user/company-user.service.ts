@@ -28,7 +28,7 @@ export class CompanyUserService {
   }
 
   public async invite(authUser: AuthUser, createCompanyUserDto: CreateCompanyUserDto): Promise<CompanyUser> {
-    const [user, invitor] = await Promise.all([
+    const [user, inviter] = await Promise.all([
       this.userService.findOne({ where: { id: createCompanyUserDto.userId } }),
       this.userService.findOne({ where: { id: authUser.id } }),
     ]);
@@ -38,13 +38,13 @@ export class CompanyUserService {
 
     await this.mailService.sendMail({
       to: user.email,
-      subject: 'Tomisha: Leah Freud hat dich eingeladen',
+      subject: `${inviter.firstName} ${inviter.lastName} via Tomisha`,
       template: 'company-user-invitation',
       context: {
         firstName: user.firstName,
         lastName: user.lastName,
-        picture: invitor.picture,
-        invitor: invitor.firstName + ' ' + invitor.lastName,
+        picture: inviter.picture,
+        inviter: inviter.firstName + ' ' + inviter.lastName,
         tokenUrl: await this.verificationService.createTokenUrl({
           prefix: COMPANY_USER_EMAIL_KEY_PREFIX,
           key: user.email,
