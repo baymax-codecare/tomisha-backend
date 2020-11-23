@@ -1,4 +1,5 @@
-import { IsNotEmpty, IsString, Length, IsJWT } from 'class-validator';
+import { IsNotEmpty, IsString, Length, IsJWT, IsInt } from 'class-validator';
+import { UserType } from 'src/user/type/user-type.enum';
 
 export class RegisterDto {
   @IsString()
@@ -13,4 +14,8 @@ export class RegisterDto {
   @IsString()
   @IsNotEmpty()
   public captcha: string;
+
+  @IsInt()
+  @IsNotEmpty()
+  public type: UserType;
 }

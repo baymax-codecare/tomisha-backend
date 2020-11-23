@@ -93,7 +93,7 @@ export class AuthService {
   }
 
   public async registerLocal(registerDto: RegisterDto): Promise<any> {
-    const { password, token, captcha } = registerDto;
+    const { password, token, captcha, type } = registerDto;
 
     const hcaptchaUrl = `https://hcaptcha.com/siteverify?secret=${this.configService.get('hcaptcha.secret')}&response=${captcha}`;
     const hcaptchaResponse = await fetch(hcaptchaUrl, { method: 'post' });
@@ -110,6 +110,7 @@ export class AuthService {
 
     const newUser = await this.userService.create({
       password,
+      type,
       email: tokenPayload.email,
       firstName: tokenPayload.firstName,
       lastName: tokenPayload.lastName,
