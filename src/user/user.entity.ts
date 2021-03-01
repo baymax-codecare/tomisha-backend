@@ -4,19 +4,23 @@ import { UserStatus } from './type/user-status.enum';
 import { UserType } from './type/user-type.enum';
 import { UserGender } from './type/user-gender.enum';
 import { UserMaritalStatus } from './type/user-marital-status.enum';
-import { hash, generateSlug } from '../shared/utils';
-import { Contact } from '../shared/entity/contact';
 import { UserDocument } from './user-document.entity';
-import { UserExperience } from './user-experience.entity';
-import { UserSkill } from './user-skill.entity';
-import { UserLanguage } from './user-language.entity';
-import { UserSchool } from './user-school.entity';
-import { UserTraining } from './user-training.entity';
-import { UserFile } from './user-file.entity';
-import { CompanyUser } from 'src/company-user/company-user.entity';
+import { File } from '../file/file.entity';
+import { Tag } from '../tag/tag.entity';
+import { hash, generateSlug } from '../shared/utils';
+import { Reference } from 'src/reference/reference.entity';
+import { Address } from '../address/address.entity';
+import { SoftSkill } from 'src/soft-skill/soft-skill.entity';
+import { EntityTimestamp } from 'src/shared/entity/timestamp';
+import { Occupation } from 'src/occupation/occupation.entity';
+import { EmailAdType } from './type/email-ad-type.enum';
+import { Branch } from 'src/branch/branch.entity';
+import { Degree } from 'src/degree/degree.entity';
+import { Employment } from 'src/employment/employment.entity';
+import { Subscription } from 'src/subscription/subscription.entity';
 
 @Entity({ name: 'users' })
-export class User extends Contact {
+export class User extends EntityTimestamp {
   @PrimaryGeneratedColumn('uuid')
   public id: string;
 
@@ -25,17 +29,17 @@ export class User extends Contact {
   public email: string;
 
   @Exclude()
-  @Column({ select: false })
+  @Column({ select: false, nullable: true })
   public password: string;
 
   @Column('smallint', { nullable: true })
   public type: UserType;
 
   @Index({ unique: true })
-  @Column()
+  @Column({ length: 120 })
   public slug: string;
 
-  @Column('smallint', { default: 0 })
+  @Column('smallint', { default: 0, nullable: true })
   public progress: number;
 
   @Index()
@@ -60,64 +64,76 @@ export class User extends Contact {
   @Column({ nullable: true, length: 250 })
   public picture: string;
 
-  @Column({ nullable: true, length: 3 })
-  public country: string;
-
-  @Column({ nullable: true, length: 250 })
-  public street: string;
-
-  @Column({ nullable: true, length: 250 })
-  public city: string;
-
-  @Column({ nullable: true, length: 50 })
-  public zip: string;
-
   @Column({ nullable: true, length: 50 })
   public phone: string;
 
   @Column('date', { nullable: true })
   public dob: Date;
 
-  @Column({ nullable: true, length: 3 })
+  @Column({ nullable: true, length: 2 })
   public nationality: string;
 
-  @Column({ nullable: true, length: 500 })
+  @Column({ nullable: true, length: 250 })
   public pob: string;
 
+  @Column({ nullable: true, default: true })
+  public public: boolean;
+
+  @Column({ nullable: true, default: false })
+  public publicRef: boolean;
+
+  @Column({ nullable: true, length: 20, default: 'ch' })
+  public locale: string;
+
+  @Column('time', { nullable: true })
+  public lastActiveAt: Date;
+
   @Column('smallint', { array: true, nullable: true })
-  public hobbies: number[];
+  public emailAdTypes: EmailAdType[];
+
+  @OneToMany(() => Address, address => address.user, { cascade: true })
+  public addresses: Address[];
 
   @OneToMany(() => UserDocument, userDoc => userDoc.user, { cascade: true })
   public documents: UserDocument[];
 
-  @OneToMany(() => UserLanguage, userLang => userLang.user, { cascade: true })
-  public languages: UserLanguage[];
+  @OneToMany(() => SoftSkill, softSkill => softSkill.user, { cascade: true })
+  public softSkills: SoftSkill[];
 
-  @OneToMany(() => UserSchool, userSchool => userSchool.user, { cascade: true })
-  public schools: UserTraining[];
+  @OneToMany(() => File, file => file.user, { cascade: true })
+  public files: File[];
 
-  @OneToMany(() => UserTraining, userTr => userTr.user, { cascade: true })
-  public trainings: UserTraining[];
+  @OneToMany(() => Degree, exp => exp.user)
+  public degrees: Degree[];
 
-  @OneToMany(() => UserSkill, userSkill => userSkill.user, { cascade: true })
-  public skills: UserSkill[];
-
-  @OneToMany(() => UserExperience, userExp => userExp.user, { cascade: true })
-  public experiences: UserExperience[];
-
-  @OneToMany(() => UserFile, userFile => userFile.user, { cascade: true })
-  public files: UserFile[];
-
-  @ManyToMany(() => User)
+  @ManyToMany(() => Tag, { cascade: true })
   @JoinTable()
-  public references: User[];
+  public hobbies: Tag[];
 
-  @OneToMany(() => CompanyUser, userComp => userComp.user, { cascade: true })
-  public companyUsers: CompanyUser[];
+  @OneToMany(() => Reference, ref => ref.user)
+  public references: Reference[];
+
+  @OneToMany(() => Employment, em => em.user)
+  public employments: Employment[];
+
+  @OneToMany(() => Occupation, occupation => occupation.user)
+  public occupations: Occupation[];
+
+  @OneToMany(() => Subscription, sub => sub.company)
+  public subscriptions: Subscription[];
+
+  // For company
+  @OneToMany(() => Branch, branch => branch.company)
+  public branches: Branch[];
+
+  @OneToMany(() => Employment, staff => staff.company, { cascade: true })
+  public staffs: Employment[];
 
   @BeforeInsert()
   public beforeInsert(): void {
-    this.password = hash(this.password);
+    if (this.password) {
+      this.password = hash(this.password);
+    }
     this.slug = generateSlug();
   }
 }

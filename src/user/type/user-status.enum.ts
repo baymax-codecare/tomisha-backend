@@ -3,4 +3,6 @@ export enum UserStatus {
   AVAILABLE_EMPLOYED = 2,
   AVAILABLE_PRIVATELY = 3,
   UNAVAILABLE = 4,
+  DEACTIVATED = 5,
+  LOCKED = 6,
 }

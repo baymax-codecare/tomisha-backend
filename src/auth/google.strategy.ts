@@ -21,7 +21,7 @@ export class GoogleStrategy extends PassportStrategy(Strategy, 'google') {
   async validate(accessToken: string, refreshToken: string, profile: any, done: VerifyCallback): Promise<void> {
     const { emails: [email] = [] } = profile;
 
-    const existedUser = await this.userService.findOne({ where: { email } });
+    const existedUser = await this.userService.userRepo.findOne({ where: { email } });
     if (existedUser) {
       return done(null, existedUser);
     }

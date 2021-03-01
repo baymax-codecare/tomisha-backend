@@ -1,18 +1,22 @@
-import { IsEnum, IsString, IsOptional, Length, IsDateString, IsArray, IsInt, MaxLength } from 'class-validator';
+import { IsEnum, IsString, IsOptional, IsDateString, IsArray, IsInt, MaxLength, Length, IsBoolean, IsDate, IsNotIn, ArrayUnique, IsObject } from 'class-validator';
 import { UserType } from '../type/user-type.enum';
 import { UserStatus } from '../type/user-status.enum';
 import { UserGender } from '../type/user-gender.enum';
 import { UserMaritalStatus } from '../type/user-marital-status.enum';
-import { UserSkill } from '../user-skill.entity';
 import { UserDocument } from '../user-document.entity';
-import { UserExperience } from '../user-experience.entity';
-import { User } from '../user.entity';
-import { UserLanguage } from '../user-language.entity';
-import { UserSchool } from '../user-school.entity';
-import { UserTraining } from '../user-training.entity';
-import { UserFile } from '../user-file.entity';
+import { File } from '../../file/file.entity';
+import { Address } from 'src/address/address.entity';
+import { SoftSkill } from 'src/soft-skill/soft-skill.entity';
+import { Tag } from 'src/tag/tag.entity';
+import { Type } from 'class-transformer';
+import { EmailAdType } from '../type/email-ad-type.enum';
 
 export class PatchMeDto {
+  @IsString()
+  @MaxLength(120)
+  @IsOptional()
+  public slug?: string;
+
   @IsInt()
   @IsOptional()
   public progress?: number;
@@ -22,26 +26,9 @@ export class PatchMeDto {
   public type?: UserType;
 
   @IsEnum(UserStatus)
+  @IsNotIn([UserStatus.DEACTIVATED])
   @IsOptional()
   public status?: UserStatus;
-
-  @IsEnum(UserGender)
-  @IsOptional()
-  public gender?: UserGender;
-
-  @IsEnum(UserMaritalStatus)
-  @IsOptional()
-  public maritalStatus?: UserMaritalStatus;
-
-  @IsString()
-  @Length(1, 250)
-  @IsOptional()
-  public firstName?: string;
-
-  @IsString()
-  @Length(1, 250)
-  @IsOptional()
-  public lastName?: string;
 
   @IsString()
   @MaxLength(250)
@@ -53,48 +40,74 @@ export class PatchMeDto {
   @IsOptional()
   public picture?: string;
 
-  @IsString()
-  @Length(1, 3)
+  @IsEnum(UserGender)
   @IsOptional()
-  public country?: string;
+  public gender?: UserGender;
+
+  @IsEnum(UserMaritalStatus)
+  @IsOptional()
+  public maritalStatus?: UserMaritalStatus;
 
   @IsString()
-  @Length(1, 3)
+  @MaxLength(250)
   @IsOptional()
-  public nationality?: string;
+  public firstName?: string;
 
   @IsString()
-  @Length(1, 250)
+  @MaxLength(250)
   @IsOptional()
-  public street?: string;
+  public lastName?: string;
+
+  @IsObject()
+  @IsOptional()
+  public address?: Address;
 
   @IsString()
-  @Length(1, 250)
-  @IsOptional()
-  public city?: string;
-
-  @IsString()
-  @Length(1, 50)
-  @IsOptional()
-  public zip?: string;
-
-  @IsString()
-  @Length(1, 50)
+  @MaxLength(50)
   @IsOptional()
   public phone?: string;
-
-  @IsString()
-  @Length(1, 250)
-  @IsOptional()
-  public pob?: string;
 
   @IsDateString()
   @IsOptional()
   public dob?: string;
 
-  @IsArray()
+  @IsString()
+  @MaxLength(250)
   @IsOptional()
-  public hobbies?: number[];
+  public pob?: string;
+
+  @IsString()
+  @Length(2)
+  @IsOptional()
+  public nationality?: string;
+
+  @IsString()
+  @MaxLength(20)
+  @IsOptional()
+  public locale?: string;
+
+  @IsString()
+  @MaxLength(20)
+  @IsOptional()
+  public emailLocale?: string;
+
+  @IsBoolean()
+  @IsOptional()
+  public publicRef?: boolean;
+
+  @IsBoolean()
+  @IsOptional()
+  public public?: boolean;
+
+  @Type(() => Date)
+  @IsDate()
+  @IsOptional()
+  public lastActiveAt?: Date;
+
+  @IsEnum(EmailAdType, { each: true })
+  @ArrayUnique()
+  @IsOptional()
+  public emailAdTypes?: EmailAdType[];
 
   @IsArray()
   @IsOptional()
@@ -102,29 +115,13 @@ export class PatchMeDto {
 
   @IsArray()
   @IsOptional()
-  public languages?: UserLanguage[];
+  public softSkills?: SoftSkill[];
 
   @IsArray()
   @IsOptional()
-  public schools?: UserSchool[];
+  public files?: File[];
 
   @IsArray()
   @IsOptional()
-  public trainings?: UserTraining[];
-
-  @IsArray()
-  @IsOptional()
-  public skills?: UserSkill[];
-
-  @IsArray()
-  @IsOptional()
-  public experiences?: UserExperience[];
-
-  @IsArray()
-  @IsOptional()
-  public files?: UserFile[];
-
-  @IsArray()
-  @IsOptional()
-  public references?: User[];
+  public hobbies?: Tag[];
 }

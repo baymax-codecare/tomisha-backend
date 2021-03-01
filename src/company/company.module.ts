@@ -1,16 +1,11 @@
-import { Module } from '@nestjs/common';
-import { TypeOrmModule } from '@nestjs/typeorm';
+import { Global, Module } from '@nestjs/common';
 import { CompanyService } from './company.service';
 import { CompanyController } from './company.controller';
-import { Company } from './company.entity';
-import { UserModule } from 'src/user/user.module';
 
+@Global()
 @Module({
-  imports: [
-    TypeOrmModule.forFeature([Company]),
-    UserModule,
-  ],
   providers: [CompanyService],
-  controllers: [CompanyController]
+  controllers: [CompanyController],
+  exports: [CompanyService],
 })
 export class CompanyModule {}

@@ -1,18 +1,18 @@
 import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, JoinColumn } from 'typeorm';
 import { User } from './user.entity';
 import { DocumentGroup } from './type/document-group.enum';
-import { Company } from 'src/company/company.entity';
+import { Branch } from 'src/branch/branch.entity';
 
 @Entity({ name: 'user-documents' })
 export class UserDocument {
-  @PrimaryGeneratedColumn('uuid')
-  public id: string;
+  @PrimaryGeneratedColumn()
+  public id: number;
 
   @Column('uuid', { nullable: true })
   public userId: string;
 
   @Column('uuid', { nullable: true })
-  public companyId: string;
+  public branchId: string;
 
   @Column('smallint', { nullable: true })
   public group: DocumentGroup;
@@ -33,7 +33,7 @@ export class UserDocument {
   @JoinColumn({ name: 'userId' })
   public user: User;
 
-  @ManyToOne(() => Company, { onDelete: 'CASCADE' })
-  @JoinColumn({ name: 'companyId' })
-  public company: Company;
+  @ManyToOne(() => Branch, { onDelete: 'CASCADE' })
+  @JoinColumn({ name: 'branchId' })
+  public branch: Branch;
 }

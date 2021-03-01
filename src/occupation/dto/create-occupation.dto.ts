@@ -1,43 +1,55 @@
-import { IsInt, IsString, MaxLength, IsArray, ArrayMinSize, ArrayUnique, Min, Max } from 'class-validator';
-import { OccupationSkill } from '../occupation-skill.entity';
+import { IsInt, IsString, MaxLength, IsArray, ArrayMinSize, ArrayUnique, Min, Max, IsOptional, IsNotEmpty, IsObject } from 'class-validator';
+import { Employment } from 'src/employment/employment.entity';
+import { HardSkill } from 'src/hard-skill/hard-skill.entity';
+import { JobRelationship } from 'src/job/type/job-relationship.enum';
+import { Tag } from 'src/tag/tag.entity';
 import { OccupationPreference } from '../occupation-preference.entity';
-import { OccupationExperience } from '../occupation-expereience.entity';
 
 export class CreateOccupationDto {
-  @IsInt()
-  public professionId: number;
-
-  @IsString()
-  @MaxLength(250)
-  public skill: string;
-
-  @IsString()
-  public skillDescription: string;
-
-  @IsString()
-  public shortDescription: string;
+  @IsObject()
+  @IsNotEmpty()
+  public profession: Tag;
 
   @IsArray()
   @ArrayMinSize(1)
   @ArrayUnique()
-  public relationships: number[];
+  @IsOptional()
+  public relationships?: JobRelationship[];
 
   @IsInt()
   @Min(0)
   @Max(100)
-  public minWorkload: number;
+  @IsOptional()
+  public minWorkload?: number;
 
   @IsInt()
   @Min(0)
   @Max(100)
-  public maxWorkload: number;
+  @IsOptional()
+  public maxWorkload?: number;
+
+  @IsString()
+  @MaxLength(250)
+  @IsOptional()
+  public specialSkill?: string;
+
+  @IsString()
+  @IsOptional()
+  public skillDescription?: string;
+
+  @IsString()
+  @IsOptional()
+  public shortDescription?: string;
 
   @IsArray()
-  public skills: OccupationSkill[];
+  @IsOptional()
+  public hardSkills?: HardSkill[];
 
   @IsArray()
-  public preferences: OccupationPreference[];
+  @IsOptional()
+  public employments?: Employment[];
 
   @IsArray()
-  public experiences: OccupationExperience[];
+  @IsOptional()
+  public preferences?: OccupationPreference[];
 }

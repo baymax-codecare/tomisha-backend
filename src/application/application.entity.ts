@@ -1,18 +1,21 @@
-import { Entity, Column, PrimaryGeneratedColumn, BeforeInsert, ManyToOne, JoinColumn } from 'typeorm';
+import { Entity, Column, PrimaryGeneratedColumn, BeforeInsert, ManyToOne, JoinColumn, OneToMany } from 'typeorm';
 import { EntityTimestamp } from 'src/shared/entity/timestamp';
 import { User } from 'src/user/user.entity';
 import { Job } from 'src/job/job.entity';
 import { Occupation } from 'src/occupation/occupation.entity';
-import { Company } from 'src/company/company.entity';
 import { generateSlug } from 'src/shared/utils';
+import { JobLog } from 'src/job-log/job-log.entity';
 
 @Entity({ name: 'applications' })
 export class Application extends EntityTimestamp {
-  @PrimaryGeneratedColumn('uuid')
-  public id: string;
+  @PrimaryGeneratedColumn()
+  public id: number;
 
   @Column('uuid', { nullable: true })
   public userId: string;
+
+  @Column('uuid', { nullable: true })
+  public companyId: string;
 
   @Column('uuid')
   public jobId: string;
@@ -20,18 +23,22 @@ export class Application extends EntityTimestamp {
   @Column('uuid')
   public occupationId: string;
 
-  @Column('uuid')
-  public companyId: string;
-
-  @Column()
+  @Column({ length: 50 })
   public slug: string;
 
-  @Column('smallint', { default: 1 })
-  public status: number;
+  @Column({ length: 500, nullable: true })
+  public message: string;
+
+  @OneToMany(() => JobLog, jobLog => jobLog.application)
+  public logs: JobLog[];
 
   @ManyToOne(() => User)
   @JoinColumn({ name: 'userId' })
   public user: User;
+
+  @ManyToOne(() => User)
+  @JoinColumn({ name: 'companyId' })
+  public company: User;
 
   @ManyToOne(() => Job)
   @JoinColumn({ name: 'jobId' })
@@ -40,10 +47,6 @@ export class Application extends EntityTimestamp {
   @ManyToOne(() => Occupation)
   @JoinColumn({ name: 'occupationId' })
   public occupation: Occupation;
-
-  @ManyToOne(() => Company)
-  @JoinColumn({ name: 'companyId' })
-  public company: Company;
 
   @BeforeInsert()
   public beforeInsert(): void {

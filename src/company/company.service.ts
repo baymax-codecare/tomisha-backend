@@ -1,147 +1,175 @@
-import { Injectable } from '@nestjs/common';
+import { BadRequestException, forwardRef, Inject, Injectable, NotFoundException } from '@nestjs/common';
 import { MailerService } from '@nestjs-modules/mailer';
-import { ConfigService } from '@nestjs/config';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
 
-import { Company } from './company.entity';
-import { SearchCompanyDto, CreateCompanyDto, FindCompanyDto, UpdateCompanyDto } from './dto';
-import { AuthUser } from 'src/auth/type/auth-user.interface';
-import { CompanyUser } from 'src/company-user/company-user.entity';
 import { UserService } from 'src/user/user.service';
 import { VerificationService } from 'src/verification/verification.service';
-import { getExpiresAt } from 'src/shared/utils';
+import { VerificationType } from 'src/verification/type/verification-type.enum';
+import { NotificationService } from 'src/notification/notification.service';
+import { EmploymentService } from 'src/employment/employment.service';
+import { NotificationType } from 'src/notification/type/notification-type.enum';
+import { RequestJoinDto } from './dto';
+import { User } from 'src/user/user.entity';
+import { UserType } from 'src/user/type/user-type.enum';
+import { EmploymentPermission } from 'src/employment/type/employment-permission.enum';
 
-const COMPANY_EMAIL_EXPIRES_IN = 432000;
-const COMPANY_EMAIL_KEY_PREFIX = 'ckp';
+const COMPANY_EMAIL_EXPIRES_IN = 86400 * 5;
 
 @Injectable()
 export class CompanyService {
   constructor(
-    @InjectRepository(Company)
-    private companyRepository: Repository<Company>,
+    @Inject(forwardRef(() => UserService))
     private userService: UserService,
     private mailService: MailerService,
-    private configService: ConfigService,
     private verificationService: VerificationService,
+    @Inject(forwardRef(() => NotificationService))
+    private notificationService: NotificationService,
+    @Inject(forwardRef(() => EmploymentService))
+    private employmentService: EmploymentService,
   ) {}
 
-  public async findMyCompanies(userId: string): Promise<Company[]> {
-    return this.companyRepository
-      .createQueryBuilder('c')
-      .innerJoin('c.companyUsers', 'cu')
-      .innerJoin('c.locations', 'loc')
-      .where('cu.userId = :userId', { userId })
-      .select(['c', 'loc'])
-      .getMany();
-  }
+  public async searchByEmail (email: string): Promise<User> {
+    const company = await this.userService.userRepo.createQueryBuilder('co')
+      .innerJoinAndMapOne('co.headquater', 'co.branches', 'br', 'br.isHeadquater')
+      .select(['co.id', 'co.email', 'br.name', 'br.status', 'br.picture'])
+      .where('co.email = :email', { email })
+      .getOne();
 
-  public async findOne(findCompanyDto: FindCompanyDto): Promise<Company> {
-    const { id, slug, userId } = findCompanyDto;
-    if (id || slug) {
-      return this.companyRepository.findOne({
-        where: id ? { id } : { slug },
-        relations: ['locations', 'companyUsers', 'companyUsers.user'],
-      });
-    } else {
-      const company = await this.companyRepository
-        .createQueryBuilder('c')
-        .leftJoin('c.locations', 'loc')
-        .innerJoin('c.companyUsers', 'cu')
-        .innerJoin('cu.user', 'user')
-        .where('cu.userId = :userId', { userId })
-        .select(['c', 'loc', 'cu', 'user.id', 'user.email', 'user.picture', 'user.firstName', 'user.lastName', 'user.street'])
-        .getOne();
-      return company;
+    if (!company) {
+      throw new NotFoundException();
     }
+
+    return company;
   }
 
-  public async create(authUser: AuthUser, createCompanyDto: CreateCompanyDto): Promise<Company> {
-    const company = this.companyRepository.create(createCompanyDto);
+  public async getPublicCompany(slug: string): Promise<User> {
+    return this.userService.userRepo.createQueryBuilder('com')
+      .innerJoin('com.branches', 'bran')
+      .leftJoinAndMapOne('bran.address', 'bran.addresses', 'addr')
+      .where('com.slug = :slug', { slug })
+      .select([
+        'com.id',
+        'com.slug',
+        'com.status',
+        'bran.id',
+        'bran.slug',
+        'bran.status',
+        'bran.isHeadquater',
+        'bran.picture',
+        'bran.cover',
+        'bran.name',
+        'bran.description',
+        'addr',
+      ])
+      .getOne();
+  }
 
-    const user = await this.userService.findOne({ where: { id: authUser.id } });
+  public async getDetailById(companyId: string, authUserId: string): Promise<User> {
+    await this.employmentService.verifyPermission(authUserId, companyId, EmploymentPermission.CREATE_BRANCH);
 
-    company.companyUsers = [{
-      userId: user.id,
-      rights: [1, 2, 3, 4],
-      user: {
-        id: user.id,
-        firstName: user.firstName,
-        lastName: user.lastName,
-        email: user.email,
-        street: user.street,
-      },
-    } as CompanyUser];
+    return this.userService.userRepo.createQueryBuilder('com')
+      .leftJoinAndSelect('com.branches', 'bra')
+      .leftJoinAndMapOne('bra.address', 'bra.addresses', 'bad')
+      .leftJoinAndSelect('com.staffs', 'sta')
+      .leftJoinAndSelect('sta.profession', 'spr')
+      .leftJoinAndSelect('sta.user', 'sus')
+      .leftJoinAndMapOne('sus.address', 'sus.addresses', 'sad')
+      .getOne();
+  }
 
-    company.emailExpireAt = new Date(getExpiresAt(COMPANY_EMAIL_EXPIRES_IN));
+  public async verifyEmail(businessEmail: string, authUserId: string): Promise<void> {
+    const email = businessEmail.toLowerCase().trim()
 
-    const newCompany = await this.companyRepository.save(company);
+    if (!!(await this.userService.userRepo.findOne({ where: { email }, select: ['id'] }))) {
+      throw new BadRequestException('Email is already in use');
+    }
+
+    const user = await this.userService.userRepo.findOne({ where: { id: authUserId }, select: ['id', 'firstName', 'lastName'] });
 
     await this.mailService.sendMail({
-      to: company.email,
+      to: email,
       subject: 'Bitte bestätige deine E-Mail-Adresse',
       template: 'verify-email',
       context: {
-        firstName: user.firstName,
-        lastName: user.lastName,
-        tokenUrl: await this.verificationService.createTokenUrl({
-          prefix: COMPANY_EMAIL_KEY_PREFIX,
-          key: company.email,
-          payload: {
-            id: newCompany.id,
-            email: company.email,
-          },
+        receiverName: user.firstName + ' ' + user.lastName,
+        href:  await this.verificationService.createTokenUrl({
+          type: VerificationType.COMPANY_VERIFY_EMAIL,
+          id: email,
           expiresIn: COMPANY_EMAIL_EXPIRES_IN,
-          callbackHref: this.configService.get('domain') + 'company/verify-callback',
         }),
         expHours: Math.round(COMPANY_EMAIL_EXPIRES_IN / 3600),
       },
     })
-
-    return newCompany;
   }
 
-  public update(id: string, updateCompanyDto: UpdateCompanyDto): Promise<Company> {
-    const company = this.companyRepository.create(updateCompanyDto);
-    company.id = id;
-
-    return this.companyRepository.save(company);
+  public async create(token: string, authUserId: string): Promise<User> {
+    const [tokenPayload, authUser] = await Promise.all([
+      this.verificationService.validateToken(token, { type: VerificationType.COMPANY_VERIFY_EMAIL }),
+      this.userService.userRepo.findOneOrFail({ where: { id: authUserId }, select: ['type'] }),
+    ]);
+    const company = this.userService.userRepo.create({
+      email: tokenPayload.id,
+      type: authUser.type === UserType.AGENT ? UserType.AGENCY : UserType.COMPANY,
+    });
+    return this.userService.userRepo.save(company);
   }
 
-  public async verifyCallback(token: string): Promise<void> {
-    const tokenPayload = await this.verificationService.validateToken({
-      token,
-      prefix: COMPANY_EMAIL_KEY_PREFIX,
-      decodedKey: 'email',
+  public async requestJoinCompany (requestJoinDto: RequestJoinDto, authUserId: string) {
+    const { companyId } = requestJoinDto;
+    const [company, sender] = await Promise.all([
+      this.userService.userRepo.findOneOrFail({ where: { id: companyId }, select: ['email'] }),
+      this.userService.userRepo.findOneOrFail({ where: { id: authUserId }, select: ['firstName', 'lastName', 'email'] }),
+      this.employmentService.employmentRepo.findOne({ companyId, userId: authUserId }).then((employment) => {
+        if (employment) {
+          throw new BadRequestException('Already joined');
+        }
+      }),
+    ]);
+
+    const notification = await this.notificationService.create({
+      type: NotificationType.COMPANY_JOIN_REQUEST,
+      fromUserId: authUserId,
+      companyId: requestJoinDto.companyId,
+      message: requestJoinDto.message,
+      minRole: EmploymentPermission.CREATE_EMPLOYEE,
     });
 
-    await this.companyRepository.update(tokenPayload.id, { emailExpireAt: null });
+    const senderName = [sender.firstName, sender.lastName].filter(Boolean).join(' ');
+
+    await this.mailService.sendMail({
+      to: company.email,
+      template: 'request-join-company',
+      subject: 'Mitarbeiter hinzufügen?',
+      context: {
+        message: requestJoinDto.message,
+        href: await this.verificationService.createTokenUrl({
+          type: VerificationType.COMPANY_JOIN_REQUEST,
+          id: authUserId + ':' + companyId,
+          expiresIn: COMPANY_EMAIL_EXPIRES_IN,
+          senderId: authUserId,
+          receiverId: companyId,
+          notificationId: notification.id,
+          data: {
+            semderEmail: sender.email,
+            senderName,
+          },
+        }),
+      }
+    });
   }
 
-  public search(searchCompanyDto: SearchCompanyDto): Promise<Company[]> {
-    const { country, zip, city, name, ...where } = searchCompanyDto;
-    const qb = this.companyRepository
-      .createQueryBuilder('c')
-      .leftJoin('c.locations', 'loc')
+  public async patchCompany(companyId: string, patchCompanyDto: any, authUserId: string): Promise<void> {
+    await this.employmentService.verifyPermission(authUserId, companyId, EmploymentPermission.CREATE_BRANCH);
 
-    for (const key of Object.keys(where)) {
-      qb.andWhere(`c.${key} = :${key}`, { [key]: where[key] });
+    const company = this.userService.userRepo.create({ id: companyId, ...patchCompanyDto });
+
+    try {
+      await this.userService.userRepo.save(company);
+    } catch (e) {
+      if (e?.code === '23505' && e.detail?.includes?.('slug')) {
+        throw new BadRequestException('URL is already in use');
+      } else {
+        throw e;
+      }
     }
-
-    if (name) {
-      qb.andWhere('c.name LIKE :name', { name: `%${name}%` });
-    }
-
-    if (country && zip && city) {
-      qb
-        .andWhere('loc.country = :country', { country })
-        .andWhere('loc.zip = :zip', { zip })
-        .andWhere('loc.city = :city', { city });
-    }
-
-    return qb
-      .select(['c', 'loc'])
-      .take(5)
-      .getMany();
   }
 }

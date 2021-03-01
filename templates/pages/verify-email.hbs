@@ -1,7 +1,7 @@
 {{#> layout}}
   {{#*inline "content"}}
-    <p class="message mb-md">
-      Hallo {{firstName}} {{lastName}},
+    <p class="mb-md">
+      Hallo {{receiverName}},
       <br />
       <br />
       herzlich willkommen bei Tomisha! Schön, dass du da bist.<br />
@@ -9,7 +9,7 @@
       Klick bitte auf den folgenden Link, um deine Anmeldung zu vervollständigen:
     </p>
 
-    <a href="{{tokenUrl}}" target="_blank" class="btn mb-lg">
+    <a href="{{href}}" target="_blank" class="btn mb-lg">
       E-Mail-Adresse bestätigne
     </a>
 
@@ -17,7 +17,7 @@
       oder füge ihn in dein Browser ein:
       <br />
 
-      <a href="{{tokenUrl}}" target="_blank" class="small">{{tokenUrl}}</a>
+      <a href="{{href}}" target="_blank" class="small">{{href}}</a>
     </p>
 
     <p>Dieser Link ist nur in den nächsten {{expHours}} Stunden gültig.</p>

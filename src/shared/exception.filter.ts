@@ -2,7 +2,6 @@ import { ExceptionFilter, Catch, ArgumentsHost, HttpException, HttpStatus, Logge
 import { Request, Response } from 'express';
 
 const DB_NOTFOUND_ENAME = 'EntityNotFound';
-const isProd = process.env.NODE_ENV === 'production';
 
 @Catch()
 export class AllExceptionFilter implements ExceptionFilter {
@@ -21,9 +20,9 @@ export class AllExceptionFilter implements ExceptionFilter {
 
     const isInternal = status === HttpStatus.INTERNAL_SERVER_ERROR;
 
-    if (isProd || isInternal) {
+    if (process.env.NODE_ENV === 'development' || isInternal) {
       Logger.error(
-        `${request.method} ${request.url}`,
+        `${request.method} ${request.url} ${status}`,
         isInternal ? e : '',
         'Exception',
       );

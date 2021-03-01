@@ -1,31 +1,35 @@
-import { Module, RequestMethod, MiddlewareConsumer } from '@nestjs/common';
+import { Module, RequestMethod, MiddlewareConsumer, Global } from '@nestjs/common';
 import { PassportModule } from '@nestjs/passport';
 
 import { AuthService } from './auth.service';
 import { AuthController } from './auth.controller';
 import { JwtStrategy } from './jwt.strategy';
-import { UserModule } from '../user/user.module';
 import { LocalStrategy } from './local.strategy';
 import { FacebookStrategy } from './fb.strategy';
 import { FacebookMiddleware } from './fb.middleware';
-// import { GoogleStrategy } from './google.strategy';
+import { AuthUser } from './type/auth-user.interface';
 
+declare global {
+  namespace Express {
+    interface User extends AuthUser {}
+  }
+}
+
+@Global()
 @Module({
   imports: [
     PassportModule.register({
       defaultStrategy: 'jwt',
     }),
-
-    UserModule,
   ],
   providers: [
     AuthService,
     LocalStrategy,
     JwtStrategy,
     FacebookStrategy,
-    // GoogleStrategy,
   ],
   controllers: [AuthController],
+  exports: [AuthService],
 })
 export class AuthModule {
   configure(consumer: MiddlewareConsumer) {

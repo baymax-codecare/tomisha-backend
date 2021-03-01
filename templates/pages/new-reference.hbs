@@ -1,0 +1,24 @@
+{{#> layout}}
+  {{#*inline "content"}}
+    <p class="mb-md">
+      Hallo {{receiverName}},
+      <br />
+      <br />
+      du hast eine neue Referenz erhalten von:
+    </p>
+
+    <div class="card mb-md">
+      <div class="avatar">
+        <img src="{{senderPicture}}" />
+      </div>
+      <div class="body">
+        <div class="card-title">{{senderName}}</div>
+        <div class="card-sub-title">{{senderAddress}}</div>
+      </div>
+    </div>
+
+    <a href="{{href}}" target="_blank" class="btn">
+      Zur Referenz
+    </a>
+  {{/inline}}
+{{/layout}}

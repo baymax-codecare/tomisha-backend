@@ -1,4 +1,4 @@
-import { IsString, IsOptional, IsBoolean, IsInt } from 'class-validator';
+import { IsString, IsOptional, IsBoolean, IsInt, Max } from 'class-validator';
 import { Transform, Type } from 'class-transformer';
 
 export class PaginationDto<T> {
@@ -18,6 +18,7 @@ export class PaginationDto<T> {
 
   @Type(() => Number)
   @IsInt()
+  @Max(100)
   @IsOptional()
   public take?: number;
 }

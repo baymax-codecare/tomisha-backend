@@ -1,4 +1,4 @@
-import { EntityTimestamp } from "./timestamp";
+import { EntityTimestamp } from './timestamp';
 import { Column } from 'typeorm';
 
 export abstract class Contact extends EntityTimestamp {

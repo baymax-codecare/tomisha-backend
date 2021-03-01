@@ -18,11 +18,23 @@ import { AssetModule } from './asset/asset.module';
 import { GlobalJwtModule } from './shared/jwt.module';
 import { OccupationModule } from './occupation/occupation.module';
 import { CompanyModule } from './company/company.module';
-import { CompanyLocationModule } from './company-location/company-location.module';
-import { CompanyUserModule } from './company-user/company-user.module.';
+import { BranchModule } from './branch/branch.module';
 import { VerificationModule } from './verification/verification.module';
 import { JobModule } from './job/job.module';
 import { ApplicationModule } from './application/application.module';
+import { TagModule } from './tag/tag.module';
+import { ReferenceModule } from './reference/reference.module';
+import { ContactModule } from './contact/contact.module';
+import { NotificationModule } from './notification/notification.module';
+import { AddressModule } from './address/address.module';
+import { ReportModule } from './report/report.module';
+import { SubscriptionModule } from './subscription/subscription.module';
+import { OfferModule } from './offer/offer.module';
+import { InterviewModule } from './interview/interview.module';
+import { FileModule } from './file/file.module';
+import { JobLogModule } from './job-log/job-log.module';
+import { DegreeModule } from './degree/degree.module';
+import { EmploymentModule } from './employment/employment.module';
 
 @Module({
   imports: [
@@ -76,15 +88,39 @@ import { ApplicationModule } from './application/application.module';
 
     CompanyModule,
 
-    CompanyLocationModule,
-
-    CompanyUserModule,
+    BranchModule,
 
     VerificationModule,
 
     JobModule,
 
     ApplicationModule,
+
+    TagModule,
+
+    ReferenceModule,
+
+    ContactModule,
+
+    NotificationModule,
+
+    AddressModule,
+
+    ReportModule,
+
+    SubscriptionModule,
+
+    OfferModule,
+
+    InterviewModule,
+
+    FileModule,
+
+    JobLogModule,
+
+    DegreeModule,
+
+    EmploymentModule,
   ],
 
   providers: [

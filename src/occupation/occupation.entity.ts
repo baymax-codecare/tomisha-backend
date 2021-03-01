@@ -1,10 +1,12 @@
 import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, JoinColumn, OneToMany, BeforeInsert } from 'typeorm';
 import { User } from '../user/user.entity';
-import { OccupationPreference } from './occupation-preference.entity';
-import { OccupationSkill } from './occupation-skill.entity';
-import { OccupationExperience } from './occupation-expereience.entity';
 import { EntityTimestamp } from 'src/shared/entity/timestamp';
 import { generateSlug } from 'src/shared/utils';
+import { OccupationPreference } from './occupation-preference.entity';
+import { HardSkill } from 'src/hard-skill/hard-skill.entity';
+import { Tag } from 'src/tag/tag.entity';
+import { JobRelationship } from 'src/job/type/job-relationship.enum';
+import { Employment } from 'src/employment/employment.entity';
 
 @Entity({ name: 'occupations' })
 export class Occupation extends EntityTimestamp {
@@ -14,7 +16,7 @@ export class Occupation extends EntityTimestamp {
   @Column('uuid', { nullable: true })
   public userId: string;
 
-  @Column('smallint')
+  @Column()
   public professionId: number;
 
   @Column()
@@ -27,10 +29,10 @@ export class Occupation extends EntityTimestamp {
   public maxWorkload: number;
 
   @Column('smallint', { array: true, nullable: true })
-  public relationships: number[];
+  public relationships: JobRelationship[];
 
   @Column({ length: 250, nullable: true })
-  public skill: string;
+  public specialSkill: string;
 
   @Column({ nullable: true })
   public skillDescription: string;
@@ -38,16 +40,20 @@ export class Occupation extends EntityTimestamp {
   @Column({ nullable: true })
   public shortDescription: string;
 
-  @OneToMany(() => OccupationPreference, occuPref => occuPref.occupation, { cascade: true })
+  @ManyToOne(() => Tag, { onDelete: 'SET NULL' })
+  @JoinColumn({ name: 'professionId' })
+  public profession: Tag;
+
+  @OneToMany(() => OccupationPreference, pref => pref.occupation, { cascade: true })
   public preferences: OccupationPreference[];
 
-  @OneToMany(() => OccupationSkill, occuSkill => occuSkill.occupation, { cascade: true })
-  public skills: OccupationSkill[];
+  @OneToMany(() => HardSkill, skill => skill.occupation, { cascade: true })
+  public hardSkills: HardSkill[];
 
-  @OneToMany(() => OccupationExperience, occuSkill => occuSkill.occupation, { cascade: true })
-  public experiences: OccupationExperience[];
+  @OneToMany(() => Employment, em => em.occupation, { cascade: true })
+  public employments: Employment[];
 
-  @ManyToOne(() => User, { onDelete: 'CASCADE' })
+  @ManyToOne(() => User)
   @JoinColumn({ name: 'userId' })
   public user: User;
 

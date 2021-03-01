@@ -1,32 +1,30 @@
-import { Controller, UseGuards, Get, Query, Post, Body, Req, Res } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
+import { Controller, UseGuards, Get, Query, Req, Param } from '@nestjs/common';
 import { JwtAuthGuard } from 'src/auth/jwt.guard';
 import { UserService } from './user.service';
-import { SearchUserDto } from './dto/search-user.dto';
 import { User } from './user.entity';
+import { SearchUserDto, FindUsersDto, FindUserDto } from './dto';
+import { Request } from 'express';
 
 @Controller('user')
 export class UserController {
   constructor(
     private userService: UserService,
-    private configService: ConfigService,
   ) {}
 
   @UseGuards(JwtAuthGuard)
-  @Get('search')
-  public search(@Query() searchUserDto: SearchUserDto): Promise<User[]> {
-    return this.userService.search(searchUserDto);
+  @Get()
+  public search(@Query() findUsersDto: FindUsersDto, @Req() req: Request) {
+    return this.userService.search(findUsersDto, req.user.id);
   }
 
   @UseGuards(JwtAuthGuard)
-  @Post('invite-reference')
-  public inviteReference(@Body('id') id: string, @Req() req) {
-    return this.userService.inviteReference(req.user, id);
+  @Get('single')
+  public searchOne(@Query() searchUserDto: SearchUserDto, @Req() req: Request) {
+    return this.userService.searchOne(searchUserDto, req.user.id)
   }
 
-  @Get('reference-callback')
-  public async acceptInvitation(@Query('token') token: string, @Res() res) {
-    await this.userService.acceptReferenceInvitation(token);
-    res.redirect(this.configService.get('webAppDomain'));
+  @Get(':slug')
+  public findOneBySlug (@Param('slug') slug: string, @Query() findUserDto: FindUserDto, @Req() req: Request): Promise<User> {
+    return this.userService.findOne({ slug, occupationId: findUserDto.occupationId }, req.user?.id);
   }
 }

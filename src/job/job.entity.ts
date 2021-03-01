@@ -1,29 +1,18 @@
-import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, JoinColumn, OneToMany, ManyToMany, JoinTable, BeforeInsert, Index } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, JoinColumn, OneToMany, BeforeInsert, Index } from 'typeorm';
 import { EntityTimestamp } from 'src/shared/entity/timestamp';
 import { User } from '../user/user.entity';
-import { JobProfession } from './job-profession.entity';
-import { CompanyLocation } from 'src/company-location/company-location.entity';
-import { CompanyUser } from 'src/company-user/company-user.entity';
-import { Company } from 'src/company/company.entity';
-import { JobSkill } from './job-skill.entity';
-import { JobStatus } from './type/JobStatus.enum';
+import { Branch } from 'src/branch/branch.entity';
+import { Employment } from 'src/employment/employment.entity';
+import { JobStatus } from './type/job-status.enum';
 import { generateSlug } from 'src/shared/utils';
+import { JobRelationship } from './type/job-relationship.enum';
+import { JobSkill } from './job-skill.entity';
+import { Tag } from 'src/tag/tag.entity';
 
 @Entity({ name: 'jobs' })
 export class Job extends EntityTimestamp {
   @PrimaryGeneratedColumn('uuid')
   public id: string;
-
-  @Index()
-  @Column('uuid', { nullable: true })
-  public companyId: string;
-
-  @Column('uuid', { nullable: true })
-  public creatorId: string;
-
-  @Index()
-  @Column('smallint')
-  public professionId: number;
 
   @Index()
   @Column()
@@ -33,62 +22,90 @@ export class Job extends EntityTimestamp {
   @Column('smallint', { default: JobStatus.OPEN })
   public status: JobStatus;
 
-  @Column({ length: 250 })
-  public title: string;
-
-  @Column({ length: 250, nullable: true })
-  public cover: string;
+  @Index()
+  @Column('uuid', { nullable: true })
+  public companyId: string;
 
   @Index()
-  @Column({ nullable: true, default: true })
-  public public: boolean;
+  @Column('uuid', { nullable: true })
+  public branchId: string;
+
+  @Column({ nullable: true })
+  public staffId: number;
+
+  @Column('uuid', { nullable: true })
+  public createdById: string;
+
+  @Column({ length: 500 })
+  public title: string;
+
+  @Column({ nullable: true })
+  public professionId: number;
+
+  @Column('smallint', { nullable: true })
+  public minWorkload: number;
+
+  @Column('smallint', { nullable: true })
+  public maxWorkload: number;
+
+  @Column('smallint', { nullable: true })
+  public level: number;
+
+  @Column('smallint', { nullable: true })
+  public years: number;
 
   @Column('smallint', { array: true, nullable: true })
   public genders: number[];
 
   @Column('smallint', { array: true, nullable: true })
-  public relationships: number[];
+  public relationships: JobRelationship[];
 
-  @Column('smallint', { default: 0 })
-  public minWorkload: number;
+  @Index()
+  @Column({ nullable: true, default: true })
+  public public: boolean;
 
-  @Column('smallint', { default: 100 })
-  public maxWorkload: number;
-
-  @Column({ nullable: true })
-  public tasks: string;
+  @Column({ length: 250, nullable: true })
+  public cover: string;
 
   @Column({ nullable: true })
-  public benefits: string;
+  public detail: string;
 
   @Column({ nullable: true })
-  public requirements: string;
+  public benefit: string;
+
+  @Column({ nullable: true })
+  public requirement: string;
 
   @Index()
   @Column('date', { nullable: true })
   public publishAt: Date;
 
-  @ManyToOne(() => Company)
-  @JoinColumn({ name: 'companyId' })
-  public company: Company;
+  @Index()
+  @Column('date', { nullable: true })
+  public endAt: Date;
 
-  @ManyToOne(() => User)
-  @JoinColumn({ name: 'userId' })
-  public creator: User;
-
-  @OneToMany(() => JobProfession, jobPro => jobPro.job, { cascade: true })
-  public professions: JobProfession[];
-
-  @OneToMany(() => JobSkill, jobSkill => jobSkill.job, { cascade: true })
+  @OneToMany(() => JobSkill, skill => skill.job, { cascade: true })
   public skills: JobSkill[];
 
-  @ManyToMany(() => CompanyLocation)
-  @JoinTable()
-  public locations: CompanyLocation[];
+  @ManyToOne(() => Tag, { onDelete: 'SET NULL' })
+  @JoinColumn({ name: 'professionId' })
+  public profession: Tag;
 
-  @ManyToMany(() => CompanyUser)
-  @JoinTable()
-  public companyUsers: CompanyUser[];
+  @ManyToOne(() => Branch)
+  @JoinColumn({ name: 'branchId' })
+  public branch: Branch;
+
+  @ManyToOne(() => User)
+  @JoinColumn({ name: 'companyId' })
+  public company: User;
+
+  @ManyToOne(() => Employment)
+  @JoinColumn({ name: 'staffId' })
+  public staff: Employment;
+
+  @ManyToOne(() => User)
+  @JoinColumn({ name: 'createdById' })
+  public createdBy: User;
 
   @BeforeInsert()
   public beforeInsert(): void {

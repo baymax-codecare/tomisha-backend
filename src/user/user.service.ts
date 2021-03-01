@@ -1,131 +1,313 @@
-import { Injectable, BadRequestException, NotFoundException } from '@nestjs/common';
+import * as dayjs from 'dayjs';
+import { BadRequestException, forwardRef, Inject, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, FindOneOptions } from 'typeorm';
 import { MailerService } from '@nestjs-modules/mailer';
-import { JwtService } from '@nestjs/jwt';
-import { ConfigService } from '@nestjs/config';
+import { Repository } from 'typeorm';
 import { User } from './user.entity';
-import { SearchUserDto } from './dto/search-user.dto';
-import { filterObject } from 'src/shared/utils';
+import { DeactivateMeDto, SearchUserDto, FindUsersDto, PatchMeDto, FindUserDto } from './dto';
+import { UserStatus } from './type/user-status.enum';
+import { Contact } from 'src/contact/contact.entity';
+import { ContactStatus } from 'src/contact/type/contact-status.enum';
+import { AuthService } from 'src/auth/auth.service';
+import { ReferenceService } from 'src/reference/reference.service';
+import { UserType } from './type/user-type.enum';
+import { Reference } from 'src/reference/reference.entity';
+import { EmploymentRole } from 'src/employment/type/employment-role.enum';
 
 @Injectable()
 export class UserService {
   constructor(
     @InjectRepository(User)
-    private userRepository: Repository<User>,
-    private mailerService: MailerService,
-    private jwtService: JwtService,
-    private configService: ConfigService,
+    public userRepo: Repository<User>,
+    @Inject(forwardRef(() => AuthService))
+    private authService: AuthService,
+    private mailerSerive: MailerService,
+    private referenceService: ReferenceService,
   ) {}
 
-  public findOne(opts: FindOneOptions<User>): Promise<User> {
-    return this.userRepository.findOne(opts);
+  public async findOne(findUserDto: FindUserDto, authUserId?: string): Promise<User> {
+    const { id, slug, occupationId, occupationSlug } = findUserDto;
+
+    const qb = this.userRepo
+      .createQueryBuilder('user')
+      .leftJoinAndMapOne('user.address', 'user.addresses', 'addr')
+      .leftJoinAndSelect('user.softSkills', 'ss')
+      .leftJoinAndSelect('user.hobbies', 'h')
+      .leftJoinAndSelect('user.documents', 'd')
+      .leftJoinAndSelect('d.branch', 'db')
+      .leftJoinAndMapOne('db.address', 'db.addresses', 'dba')
+      .loadRelationCountAndMap('user.referenceCount', 'user.references')
+      .leftJoinAndSelect('user.degrees', 'deg')
+      .leftJoinAndSelect('deg.branch', 'deb')
+      .leftJoinAndMapOne('deb.address', 'deb.addresses', 'deba')
+      .leftJoinAndSelect('user.branches', 'b') // If company
+      .leftJoinAndMapOne('b.address', 'b.addresses', 'ba');
+
+    if (occupationSlug) {
+      qb.leftJoinAndSelect('user.occupations', 'oc', 'oc.slug = :occupationSlug', { occupationSlug });
+    } else if (occupationId) {
+      qb.leftJoinAndSelect('user.occupations', 'oc', 'oc.id = :occupationId', { occupationId });
+    } else {
+      qb.leftJoinAndSelect('user.occupations', 'oc');
+    }
+
+    qb
+      .leftJoinAndSelect('oc.profession', 'opr')
+      .leftJoinAndSelect('oc.hardSkills', 'ohs')
+      .leftJoinAndSelect('ohs.skill', 'hs')
+      .leftJoinAndSelect('oc.preferences', 'opf')
+      .leftJoinAndSelect('oc.employments', 'oce')
+      .leftJoinAndSelect('oce.files', 'ocef')
+      .leftJoinAndSelect('oce.branch', 'oceb')
+      .leftJoinAndMapOne('oceb.address', 'oceb.addresses', 'oceba');
+
+    if (slug) {
+      qb.where('user.slug = :slug', { slug });
+    } else {
+      qb.where('user.id = :id', { id });
+    }
+
+    qb
+      .andWhere('user.status NOT IN (:...inactiveStatuses)', { inactiveStatuses: [UserStatus.LOCKED, UserStatus.DEACTIVATED] })
+      .addSelect(
+        sq => sq.select('COUNT(*)', 'contactCount')
+          .from(Contact, 'cc')
+          .where('cc.userId = user.id OR cc.contactUserId = user.id'),
+        'contactCount',
+      )
+      .addSelect(
+        sq => sq.select('AVG(rating)', 'rating')
+          .from(Reference, 'ref')
+          .where('ref.userId = user.id'),
+        'rating',
+      );
+
+    if (authUserId) {
+      qb
+        .leftJoinAndSelect('user.files', 'f')
+        .leftJoinAndSelect('deg.files', 'ef')
+        .leftJoinAndSelect('oe.files', 'oef')
+        .leftJoinAndMapOne('user.address', 'user.addresses', 'ua')
+        .leftJoin(
+          Contact,
+          'c',
+          '(c.userId = :userId AND c.contactUserId = :authUserId) OR (c.userId = :authUserId AND c.contactUserId = :userId)',
+          { authUserId },
+        )
+        .andWhere('c.status != :blockedStatus', { blockedStatus: ContactStatus.BLOCKED })
+        .addSelect('c.status', 'contactStatus');
+    }
+
+    const user = await qb.getOne();
+
+    if (!user) {
+      throw new NotFoundException();
+    }
+
+    if (!user.publicRef && user.type <= UserType.AGENT && authUserId) {
+      Object.assign(user, {
+        canViewReferences: await this.referenceService.canView({ viewerId: authUserId, userId: user.id }),
+      });
+    }
+
+    return user;
   }
 
-  public findMe(id: number): Promise<User> {
-    return this.userRepository.findOne({
-      where: { id },
-      relations: [
-        'documents',
-        'languages',
-        'schools',
-        'trainings',
-        'skills',
-        'experiences',
-        'references',
-        'files',
-        'languages.company',
-        'languages.company.locations',
-        'schools.company',
-        'schools.company.locations',
-        'trainings.company',
-        'trainings.company.locations',
-        'experiences.company',
-        'experiences.company.locations',
-      ],
-    });
+  public async findMe(authUserId: string): Promise<User> {
+    return this.userRepo.createQueryBuilder('user')
+    .where('user.id = :authUserId', { authUserId })
+    .leftJoinAndMapOne('user.address', 'user.addresses', 'addr')
+    .leftJoin('user.documents', 'doc')
+    .leftJoin('doc.branch', 'docBranch')
+    .leftJoinAndMapOne('docBranch.address', 'docBranch.addresses', 'baddr')
+    .leftJoin('user.softSkills', 'ss')
+    .leftJoin('user.hobbies', 'hb')
+    .loadRelationCountAndMap('user.referenceCount', 'user.references')
+    .loadRelationCountAndMap('user.fileCount', 'user.files')
+    .leftJoin('user.degrees', 'deg')
+    .select([
+      'user',
+      'addr',
+      'doc',
+      'docBranch.id',
+      'docBranch.slug',
+      'docBranch.status',
+      'docBranch.name',
+      'docBranch.picture',
+      'docBranch.cover',
+      'baddr',
+      'ss',
+      'hb',
+      'deg.id',
+      'deg.type',
+    ])
+    .getOne();
   }
 
-  public search(searchUserDto: SearchUserDto): Promise<User[]> {
+  public getBriefMe(authUserId: string): Promise<User> {
+    return this.userRepo.createQueryBuilder('user')
+      .leftJoinAndMapOne('user.address', 'user.addresses', 'addr')
+      .leftJoin('user.employments' ,'employment', 'employment.role != :employeeRole', { employeeRole: EmploymentRole.EMPLOYEE })
+      .leftJoin('employment.company', 'company', 'company.status = :activeStatus', { activeStatus: UserStatus.AVAILABLE_ACTIVELY })
+      .leftJoinAndMapOne('company.headquater', 'company.branches', 'branch', 'branch.isHeadquater')
+      .leftJoinAndMapOne('branch.address', 'branch.addresses', 'baddr')
+      .leftJoin('company.subscriptions', 'sub', 'sub.endAt >= :now AND (sub.jobAmount IS NULL OR sub.remainingJobs > 0)', { now: dayjs().format('YYYY-MM-DD') })
+      .leftJoin('user.occupations', 'occu')
+      .leftJoin('occu.profession', 'prof')
+      .where('user.id = :authUserId', { authUserId })
+      .select([
+        'user.id',
+        'user.slug',
+        'user.type',
+        'user.status',
+        'user.firstName',
+        'user.lastName',
+        'user.picture',
+        'user.progress',
+        'user.email',
+        'addr',
+        'company.id',
+        'company.slug',
+        'company.status',
+        'company.type',
+        'company.email',
+        'employment.id',
+        'employment.companyId',
+        'employment.role',
+        'branch.id',
+        'branch.name',
+        'branch.status',
+        'branch.picture',
+        'baddr.city',
+        'baddr.zip',
+        'baddr.text',
+        'occu.id',
+        'prof',
+        'sub.id',
+        'sub.planId',
+        'sub.jobAmount',
+        'sub.remainingJobs',
+        'sub.startAt',
+        'sub.endAt',
+      ])
+      .getOne();
+  }
+
+  public search(findUsersDto: FindUsersDto, authUserId: string): Promise<{ items: User[], total: number }> {
     const {
       firstName,
       lastName,
-      phone,
+    } = findUsersDto;
+
+    const qb = this.userRepo
+      .createQueryBuilder('user')
+      .leftJoinAndMapOne('user.address', 'user.addresses', 'address')
+      .where('user.status != :deactivatedStatus', { status: UserStatus.DEACTIVATED })
+      .andWhere('user.status != :lockedStatus', { lockedStatus: UserStatus.LOCKED })
+      .andWhere('user.id != :authUserId', { authUserId })
+      .select(['user.picture', 'user.id', 'user.slug', 'user.firstName', 'user.lastName', 'user.status', 'address.city', 'address.zip', 'address.text'])
+      .take(50);
+
+    if (firstName) {
+      qb.andWhere('LOWER(user.firstName) LIKE :firstName', { firstName: `%${firstName.toLowerCase()}%` });
+    }
+
+    if (lastName) {
+      qb.andWhere('LOWER(user.firstName) LIKE :lastName', { lastName: `%${lastName.toLowerCase()}%` });
+    }
+
+    return qb.getManyAndCount().then(([items, total]) => ({ items, total }));
+  }
+
+  public async searchOne(searchUserDto: SearchUserDto, authUserId: string): Promise<User> {
+    const {
       email,
+      phone,
+      businessEmail,
     } = searchUserDto;
 
-    return this.userRepository.find({
-      where: filterObject({ firstName, lastName, phone, email }),
-      select: ['id', 'email', 'picture', 'firstName', 'lastName', 'slug'],
-      take: 5,
-    });
-  }
+    const qb = this.userRepo
+      .createQueryBuilder('user')
+      .leftJoinAndMapOne('user.address', 'user.addresses', 'address')
+      .where('user.status != :deactivatedStatus', { deactivatedStatus: UserStatus.DEACTIVATED })
+      .andWhere('user.status != :lockedStatus', { lockedStatus: UserStatus.LOCKED })
+      .andWhere('user.id != :authUserId', { authUserId })
+      .select(['user.picture', 'user.id', 'user.slug', 'user.firstName', 'user.lastName', 'user.status', 'address.city', 'address.zip'])
 
-  public async inviteReference(authUser: any, referenceId: string) {
-    const [referencedUser, user] = await Promise.all([
-      this.userRepository.findOne(referenceId),
-      this.userRepository.findOne(authUser.id, { relations: ['references'] }),
-    ]);
-    if (!referencedUser || !user || user.references.some((ref) => ref.id === referenceId)) {
-      return;
+    if (email) {
+      qb.andWhere('user.email = :email', { email });
     }
 
-    const token = this.jwtService.sign({
-      referenceId,
-      userId: user.id,
-    });
-
-    await this.mailerService.sendMail({
-      to: referencedUser.email,
-      subject: 'Andreas Zimmerman bittet um Referenz BestätigungBitte bestätige deine E-Mail-Adresse',
-      template: 'reference-invitation',
-      context: {
-        firstName: referencedUser.firstName,
-        lastName: referencedUser.lastName,
-        tokenUrl: this.configService.get('domain') + 'user/reference-callback?token=' + token,
-        invitor: user.firstName + ' ' + user.lastName,
-        picture: user.picture,
-      },
-    });
-  }
-
-  public async acceptReferenceInvitation(token: string) {
-    const decoded = this.jwtService.verify(token);
-    if (!decoded) {
-      throw new BadRequestException('URL is invalid or has been expired');
+    if (phone) {
+      qb.andWhere('user.phone = :phone', { phone });
     }
 
-    const { referenceId, userId } = decoded;
+    if (businessEmail) {
+      qb
+        .innerJoin('user.employments', 'employment')
+        .innerJoin('employment.company', 'company')
+        .where('employment.role = :adminRole', { adminRole: EmploymentRole.ADMIN })
+        .andWhere('company.email = :businessEmail', { businessEmail });
+    }
 
-    const [referencedUser, user] = await Promise.all([
-      this.userRepository.findOne(referenceId),
-      this.userRepository.findOne(userId, { relations: ['references'] }),
-    ]);
-
-    if (!referencedUser || !user) {
+    const user = await qb.getOne();
+    if (!user) {
       throw new NotFoundException('User not found');
     }
+    return user;
+  }
 
-    const i = user.references.findIndex((ref) => ref.id === referenceId);
-    if (i !== -1) {
-      return;
+  public patchPersonalInfo (patchMeDto: PatchMeDto, authUserId: string): Promise<User> {
+    const { address, ...payload } = patchMeDto;
+    if (address) {
+      Object.assign(payload, { addresses: [address] });
     }
+    const user = this.userRepo.create(payload);
+    user.id = authUserId;
 
-    user.references.push(referencedUser);
+    return this.userRepo.save(user)
+      .then((newUser) => {
+        if (newUser.addresses) {
+          newUser['address'] = newUser.addresses[0] || null;
+          delete newUser.addresses;
+        }
 
-    await this.userRepository.save(user);
+        return newUser;
+      })
+      .catch((e) => {
+        if (e?.code === '23505' && e.detail?.includes?.('slug')) {
+          throw new BadRequestException('Slug is already in use');
+        } else {
+          throw e;
+        }
+      });
+  }
+
+  public async deactivateMe (deactivateMeDto: DeactivateMeDto, authUserId: string): Promise<void> {
+    const user: User = await this.authService.verifyPassword(authUserId, deactivateMeDto.password, true);
+
+    await this.userRepo.update({ id: authUserId }, { status: UserStatus.DEACTIVATED });
+
+    this.mailerSerive.sendMail({
+      to: user.email,
+      template: 'deactivate-user',
+      subject: 'Du hast uns verlassen',
+      context: {
+        name: [user.firstName, user.lastName].filter(Boolean).join(' '),
+      },
+    })
   }
 
   public update(id: any, updateUserDto: any): Promise<User> {
-    const user = this.userRepository.create(updateUserDto as User);
+    const user = this.userRepo.create(updateUserDto as User);
     user.id = id;
 
-    return this.userRepository.save(user);
+    return this.userRepo.save(user);
   }
 
   public create(createUserDto: any): Promise<User> {
-    const user = this.userRepository.create(createUserDto as User);
+    const user = this.userRepo.create(createUserDto as User);
 
-    return this.userRepository.save(user);
+    return this.userRepo.save(user);
   }
 }

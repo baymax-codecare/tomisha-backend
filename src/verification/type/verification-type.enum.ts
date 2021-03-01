@@ -1,0 +1,9 @@
+export enum VerificationType {
+  AUTH_REGISTER = 1,
+  AUTH_LOGIN = 2,
+  AUTH_RESET_PW = 3,
+  COMPANY_VERIFY_EMAIL = 4,
+  REFERENCE_INVITE = 5,
+  STAFF_INVITE = 6,
+  COMPANY_JOIN_REQUEST = 7,
+}

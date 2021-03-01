@@ -1,14 +1,14 @@
 {{#> layout}}
   {{#*inline "content"}}
-    <p class="message">
-      Hallo {{firstName}} {{lastName}},
+    <p>
+      Hallo {{receiverName}},
       <br />
       <br />
       wir haben eine Anfrage erhalten, dein Passwort zurückzusetzen.<br />
       Falls du diese Anfrage nicht gesendet hast, kannst du diese Nachricht einfach ignorieren. Andernfalls kannst du dein Passwort zurücksetzen.
     </p>
 
-    <a href="{{tokenUrl}}" target="_blank" class="btn">
+    <a href="{{href}}" target="_blank" class="btn">
       Dein Passwort zurücksetzen
     </a>
   {{/inline}}

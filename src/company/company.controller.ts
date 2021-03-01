@@ -1,52 +1,50 @@
-import { Controller, UseGuards, Get, Query, Post, Body, Req, Res, Put, Param, ParseUUIDPipe } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
+import { Controller, UseGuards, Res, Post, Body, Req, Get, Query, Param, ParseUUIDPipe, Patch } from '@nestjs/common';
 import { CompanyService } from './company.service';
 import { JwtAuthGuard } from 'src/auth/jwt.guard';
-import { SearchCompanyDto, CreateCompanyDto, FindCompanyDto, UpdateCompanyDto } from './dto';
-import { Company } from './company.entity';
+import { Request, Response } from 'express';
+import { RequestJoinDto } from './dto';
 
 @Controller('company')
 export class CompanyController {
   constructor(
     private companyService: CompanyService,
-    private configService: ConfigService,
   ) {}
 
-  @UseGuards(JwtAuthGuard)
-  @Get('single')
-  public findCompany(@Query() findCompanyDto: FindCompanyDto): Promise<Company> {
-    return this.companyService.findOne(findCompanyDto);
-  }
-
-  @UseGuards(JwtAuthGuard)
-  @Get('me')
-  public findMyCompanies(@Req() req): Promise<Company[]> {
-    return this.companyService.findMyCompanies(req.user.id);
-  }
-
-  @UseGuards(JwtAuthGuard)
-  @Post()
-  public createCompany(@Body() createCompanyDto: CreateCompanyDto, @Req() req): Promise<Company> {
-    return this.companyService.create(req.user, createCompanyDto);
-  }
-
-  @UseGuards(JwtAuthGuard)
-  @Put('/:id')
-  public updateCompany(@Param('id', ParseUUIDPipe) id: string, @Body() updateCompanyDto: UpdateCompanyDto): Promise<Company> {
-    return this.companyService.update(id, updateCompanyDto);
+  @Get('public/:companySlug')
+  public getPublicCompany(@Param('companySlug') companySlug: string) {
+    return this.companyService.getPublicCompany(companySlug);
   }
 
   @UseGuards(JwtAuthGuard)
   @Get('search')
-  public search(@Query() searchCompanyDto: SearchCompanyDto): Promise<Company[]> {
-    return this.companyService.search(searchCompanyDto);
+  public searchByEmail(@Query('email') email: string) {
+    return this.companyService.searchByEmail(email);
   }
 
   @UseGuards(JwtAuthGuard)
-  @Get('verify-callback')
-  public async verifyCallback(@Query('token') token: string, @Res() res): Promise<void> {
-    await this.companyService.verifyCallback(token).catch(() => {});
+  @Get(':companyId')
+  public getDetailById(@Param('companyId', ParseUUIDPipe) companyId: string, @Req() req: Request) {
+    return this.companyService.getDetailById(companyId, req.user.id);
+  }
 
-    res.redirect(this.configService.get('webAppDomain'))
+  @UseGuards(JwtAuthGuard)
+  @Post('verify-email')
+  public async verifyEmail(@Body('email') email: string, @Req() req: Request, @Res() res: Response): Promise<void> {
+    await this.companyService.verifyEmail(email, req.user.id);
+    res.sendStatus(200);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Post('join')
+  public async requestJoinCompany(@Body() requestJoinDto: RequestJoinDto, @Req() req: Request, @Res() res: Response): Promise<void> {
+    await this.companyService.requestJoinCompany(requestJoinDto, req.user.id);
+    res.sendStatus(200);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Patch(':id')
+  public async patchCompany(@Param('id', ParseUUIDPipe) id: string, @Body('slug') slug: string, @Req() req: Request, @Res() res: Response): Promise<void> {
+    await this.companyService.patchCompany(id, { slug }, req.user.id);
+    res.sendStatus(200)
   }
 }

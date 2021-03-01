@@ -1,4 +1,4 @@
-import { IsUUID, IsString } from 'class-validator';
+import { IsUUID, IsString, MaxLength, IsOptional } from 'class-validator';
 
 export class CreateApplicationDto {
   @IsUUID()
@@ -7,6 +7,12 @@ export class CreateApplicationDto {
   @IsUUID()
   public occupationId: string;
 
-  @IsUUID()
-  public companyId: string;
+  @IsString()
+  @MaxLength(200)
+  public password: string;
+
+  @IsString()
+  @MaxLength(500)
+  @IsOptional()
+  public message?: string;
 }

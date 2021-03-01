@@ -28,6 +28,7 @@ export default () => {
     port: parseInt(process.env.APP_PORT, 10) || 3100,
     domain: process.env.APP_DOMAIN,
     webAppDomain,
+    defaultUserPicture: webAppDomain + '/img/user_placeholder.svg',
 
     uploadDir: UPLOAD_DIR,
     assetDir,
@@ -38,9 +39,6 @@ export default () => {
     auth: {
       secret: process.env.AUTH_SECRET,
       expiresIn: +process.env.AUTH_EXPIRES_IN || 2592000,
-      callbackHref: webAppDomain + process.env.AUTH_CALLBACK_HREF,
-      verifiedHref: webAppDomain + process.env.AUTH_VERIFIED_HREF,
-      resetPasswordHref: webAppDomain + process.env.AUTH_RESET_PW_HREF,
       facebook: {
         clientId: process.env.AUTH_FB_CLIENT_ID,
         secret: process.env.AUTH_FB_SECRET,
@@ -95,6 +93,9 @@ export default () => {
           dir: join(process.cwd(), 'templates/partials'),
         },
       },
+    },
+    stripe: {
+      secret: process.env.STRIPE_SECRET_KEY,
     },
   };
 };

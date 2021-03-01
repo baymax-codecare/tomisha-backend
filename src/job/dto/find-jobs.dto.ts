@@ -1,9 +1,18 @@
 import { PaginationDto } from 'src/shared/dto/pagination.dto';
-import { IsInt, IsOptional, MaxLength, IsString, Min, Max, IsArray } from 'class-validator';
+import { IsInt, IsOptional, MaxLength, IsString, Min, Max, IsNumber, IsUUID } from 'class-validator';
 import { Job } from '../job.entity';
-import { Transform } from 'class-transformer';
+import { Type } from 'class-transformer';
 
 export class FindJobsDto extends PaginationDto<Job> {
+  @IsUUID()
+  @IsOptional()
+  public companyId?: string;
+
+  @IsUUID()
+  @IsOptional()
+  public branchId?: string;
+
+  @Type(() => Number)
   @IsInt()
   @IsOptional()
   public professionId?: number;
@@ -13,46 +22,50 @@ export class FindJobsDto extends PaginationDto<Job> {
   @IsOptional()
   public title?: string;
 
-  @IsString()
-  @MaxLength(250)
-  @IsOptional()
-  public city?: string;
-
-  @IsString()
-  @MaxLength(3)
-  @IsOptional()
-  public country?: string;
-
-  @Transform((v) => +v)
+  @Type(() => Number)
   @IsInt()
   @Min(0)
   @Max(100)
   @IsOptional()
   public minWorkload?: number;
 
-  @Transform((v) => +v)
-  @IsInt()
-  @Min(0)
-  @Max(100000)
-  @IsOptional()
-  public maxWorkload?: number;
-
-  @Transform((v) => +v)
+  @Type(() => Number)
   @IsInt()
   @Min(0)
   @Max(100)
   @IsOptional()
-  public minSize?: number;
+  public maxWorkload?: number;
 
-  @Transform((v) => +v)
+  @IsString()
+  @IsOptional()
+  public sizes?: string;
+
+  @IsString()
+  @IsOptional()
+  public relationships?: string;
+
+  @IsString()
+  @MaxLength(200)
+  @IsOptional()
+  public city?: String;
+
+  @IsString()
+  @MaxLength(3)
+  @IsOptional()
+  public country?: String;
+
+  @Type(() => Number)
+  @IsNumber()
+  @IsOptional()
+  public lat?: number;
+
+  @Type(() => Number)
+  @IsNumber()
+  @IsOptional()
+  public lng?: number;
+
+  @Type(() => Number)
   @IsInt()
-  @Min(0)
-  @Max(100000)
   @IsOptional()
-  public maxSize?: number;
-
-  @Transform((v) => +v)
-  @IsArray()
-  @IsOptional()
-  public relationships?: number[]
+  public miles?: number;
 }
