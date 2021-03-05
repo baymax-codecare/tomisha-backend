@@ -1,4 +1,5 @@
 import { Injectable } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { InjectRepository } from '@nestjs/typeorm';
 import { EmploymentService } from 'src/employment/employment.service';
 import { Repository } from 'typeorm';
@@ -11,6 +12,7 @@ export class NotificationService {
   constructor (
     @InjectRepository(Notification)
     public notificationRepo: Repository<Notification>,
+    private configService: ConfigService,
     private employmentService: EmploymentService,
   ) {}
 
@@ -49,7 +51,7 @@ export class NotificationService {
         'ua.city',
         'ua.text',
         'fb.id',
-        'fb.slug',
+        'fb.companyId',
         'fb.status',
         'fb.picture',
         'fb.name',
@@ -72,7 +74,7 @@ export class NotificationService {
     return qb;
   }
 
-  public async create (createNotificationDto: CreateNotificationDto): Promise<Notification> {
+  public async create(createNotificationDto: CreateNotificationDto): Promise<Notification> {
     const uniqueMetadata = { ...createNotificationDto, status: NotificationStatus.ACTIVE };
     delete uniqueMetadata.message;
     delete uniqueMetadata.metadata;
@@ -89,5 +91,10 @@ export class NotificationService {
 
   public async setStatus (id: number, status: NotificationStatus, authUserId: string): Promise<void> {
     await this.notificationRepo.update({ id }, { status });
+  }
+
+  public generateWebappUrl(notification: Notification) {
+    return this.configService.get('webAppDomain') +
+      `notification/${notification.id}?type=${notification.type}&receiverId=${notification.userId || notification.companyId}`;
   }
 }

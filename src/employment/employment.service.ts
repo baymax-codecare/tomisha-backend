@@ -4,17 +4,16 @@ import { MoreThanOrEqual, Repository } from 'typeorm';
 import { MailerService } from '@nestjs-modules/mailer';
 import { FindEmploymentsDto, UpdateEmploymentDto, InviteEmploymentDto, CreateEmploymentDto, AcceptEmploymentInvitationDto } from './dto';
 import { Employment } from './employment.entity';
-import { VerificationService } from 'src/verification/verification.service';
 import { UserService } from 'src/user/user.service';
 import { ConfigService } from '@nestjs/config';
 import { NotificationService } from 'src/notification/notification.service';
 import { NotificationType } from 'src/notification/type/notification-type.enum';
-import { VerificationType } from 'src/verification/type/verification-type.enum';
 import { EmploymentPermission } from './type/employment-permission.enum';
 import { NotificationStatus } from 'src/notification/type/notification-status.enum';
 import { BranchService } from 'src/branch/branch.service';
 import { EmploymentRole } from './type/employment-role.enum';
 import { AuthService } from 'src/auth/auth.service';
+import { parseJSON } from 'src/shared/utils';
 
 const EMPLOYMENT_INVITATION_EXPIRES_IN = 30 * 3600;
 
@@ -37,7 +36,6 @@ export class EmploymentService {
     @Inject(forwardRef(() => BranchService))
     private branchService: BranchService,
     private mailService: MailerService,
-    private verificationService: VerificationService,
     @Inject(forwardRef(() => NotificationService))
     private notificationService: NotificationService,
     private configService: ConfigService,
@@ -79,7 +77,7 @@ export class EmploymentService {
       await this.authService.verifyPassword(authUserId, password);
     }
 
-    const [receiver, sender] = await Promise.all([
+    const [receiver, sender, oldNotification] = await Promise.all([
       this.userService.userRepo.findOneOrFail({ where: { email: userEmail }, select: ['firstName', 'lastName', 'email'] })
         .catch(() => {
           throw new BadRequestException('User not found');
@@ -99,7 +97,7 @@ export class EmploymentService {
       metadata: JSON.stringify({ role }),
     });
 
-    const senderName = [sender.user.firstName, sender.user.lastName].filter(Boolean).join(' ')
+    const senderName = [sender.user.firstName, sender.user.lastName].filter(Boolean).join(' ');
 
     await this.mailService.sendMail({
       to: receiver.email,
@@ -111,54 +109,46 @@ export class EmploymentService {
         senderProfession: sender.profession?.title || '',
         senderPicture: sender.user.picture || this.configService.get('defaultUserPicture'),
         message,
-        href: await this.verificationService.createTokenUrl({
-          id: authUserId + ':' + branchId + ':' + receiver.id,
-          type: VerificationType.STAFF_INVITE,
-          expiresIn: EMPLOYMENT_INVITATION_EXPIRES_IN,
-          receiverId: receiver.id,
-          senderId: branchId,
-          notificationId: notification.id,
-          data: {
-            userId: receiver.id,
-            branchId,
-            companyId,
-            role,
-          },
-        }),
+        href: this.notificationService.generateWebappUrl(notification),
         expHours: Math.round(EMPLOYMENT_INVITATION_EXPIRES_IN / 3600),
       },
     });
   }
 
-  public async acceptInvitation({ token, ...acceptInvitationDto }: AcceptEmploymentInvitationDto, authUserId: string): Promise<Employment> {
-    const { data: inviteEmploymentDto } = await this.verificationService.validateToken(token, {
-      type: VerificationType.STAFF_INVITE,
-      receiverId: authUserId,
+  public async acceptInvitation({ notificationId, ...acceptInvitationDto }: AcceptEmploymentInvitationDto, authUserId: string): Promise<Employment> {
+    const notification = await this.notificationService.notificationRepo.findOneOrFail({
+      where: { id: notificationId, userId: authUserId },
+      relations: ['fromBranch'],
     });
+
+    const { role } = parseJSON(notification.metadata) || {};
+    if (!role) {
+      throw new BadRequestException();
+    }
 
     // Mark all invitations status as accepted
     this.notificationService.notificationRepo.update({
       userId: authUserId,
-      fromBranchId: inviteEmploymentDto.branchId,
+      fromBranchId: notification.fromBranchId,
       type: NotificationType.STAFF_INVITE,
       status: NotificationStatus.ACTIVE
     }, { status: NotificationStatus.YES });
 
     // Notify employer
     this.notificationService.create({
-      companyId: inviteEmploymentDto.companyId,
+      companyId: notification.fromBranch.companyId,
       fromUserId: authUserId,
       type: NotificationType.STAFF_INVITE_ACCEPTED,
-      minRole: createRolePermissionTable[inviteEmploymentDto.role],
-      metadata: JSON.stringify({ role: inviteEmploymentDto.role }),
+      minRole: createRolePermissionTable[role],
+      metadata: JSON.stringify({ role }),
     });
 
     const employment = this.employmentRepo.create({
       ...acceptInvitationDto,
       userId: authUserId,
-      companyId: inviteEmploymentDto.companyId,
-      branchId: inviteEmploymentDto.branchId,
-      role: inviteEmploymentDto.role,
+      companyId: notification.fromBranch.companyId,
+      branchId: notification.fromBranchId,
+      role,
     });
     return this.employmentRepo.save(employment);
   }
@@ -168,42 +158,40 @@ export class EmploymentService {
       await this.authService.verifyPassword(authUserId, createEmploymentDto.password);
     }
 
-    const tokenPayload = await this.verificationService.validateToken(createEmploymentDto.token, {
-      type: VerificationType.COMPANY_JOIN_REQUEST,
+    const notification = await this.notificationService.notificationRepo.findOneOrFail({
+      where: { id: createEmploymentDto.notificationId },
+      relations: ['fromUser'],
     });
 
     const role: EmploymentRole = createEmploymentDto.role;
-    const { receiverId: companyId, senderId: userId } = tokenPayload;
+    const { companyId, fromUserId, fromUser } = notification;
 
     await Promise.all([
-      this.verifyPermission(authUserId, tokenPayload.data.companyId, createRolePermissionTable[role]),
+      this.verifyPermission(authUserId, companyId, createRolePermissionTable[role]),
       this.branchService.branchRepo.findOneOrFail({ id: createEmploymentDto.branchId, companyId }),
     ]);
 
     const employment = this.employmentRepo.create({
-      branchId: createEmploymentDto.branchId,
-      role: createEmploymentDto.role,
+      ...parseJSON(notification.metadata),
       companyId,
-      userId,
+      userId: fromUserId,
+      role: createEmploymentDto.role,
+      branchId: createEmploymentDto.branchId,
     });
 
-    tokenPayload.data.senderEmail && this.mailService.sendMail({
-      to: tokenPayload.data.senderEmail,
+    this.mailService.sendMail({
+      to: fromUser.email,
       subject: 'Du bist in einem neuen Unternehmen',
       template: 'request-join-company-accepted',
       context: {
-        senderName: tokenPayload.data.senderName,
+        senderName: [fromUser.firstName, fromUser.lastName].join(' '),
         href: this.configService.get('webAppDomain') + 'dashboard?companyId=' + companyId,
       },
     });
 
-    // Mark all join requests status as accepted
-    this.notificationService.notificationRepo.update({
-      companyId,
-      fromUserId: userId,
-      type: NotificationType.COMPANY_JOIN_REQUEST,
-      status: NotificationStatus.ACTIVE
-    }, { status: NotificationStatus.YES });
+    // Update notification status
+    notification.status = NotificationStatus.YES;
+    this.notificationService.notificationRepo.save(notification);
 
     // TODO invite employment instead of ok right away
     if (role === EmploymentRole.ADMIN) {

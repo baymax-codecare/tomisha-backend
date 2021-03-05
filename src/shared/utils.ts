@@ -25,3 +25,11 @@ export function getExpiresAt(sec: number): string {
 export function generateSlug() {
   return Math.round(Date.now() + Math.random() * 100000) + '';
 }
+
+export function parseJSON(str) {
+  try {
+    return JSON.parse(str)
+  } catch (_) {
+    return null
+  }
+}

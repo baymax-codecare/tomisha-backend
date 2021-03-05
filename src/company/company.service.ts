@@ -114,10 +114,11 @@ export class CompanyService {
   }
 
   public async requestJoinCompany (requestJoinDto: RequestJoinDto, authUserId: string) {
-    const { companyId } = requestJoinDto;
-    const [company, sender] = await Promise.all([
+    const { companyId, ...metadata } = requestJoinDto;
+
+    const [company] = await Promise.all([
       this.userService.userRepo.findOneOrFail({ where: { id: companyId }, select: ['email'] }),
-      this.userService.userRepo.findOneOrFail({ where: { id: authUserId }, select: ['firstName', 'lastName', 'email'] }),
+
       this.employmentService.employmentRepo.findOne({ companyId, userId: authUserId }).then((employment) => {
         if (employment) {
           throw new BadRequestException('Already joined');
@@ -131,9 +132,8 @@ export class CompanyService {
       companyId: requestJoinDto.companyId,
       message: requestJoinDto.message,
       minRole: EmploymentPermission.CREATE_EMPLOYEE,
+      metadata: JSON.stringify(metadata),
     });
-
-    const senderName = [sender.firstName, sender.lastName].filter(Boolean).join(' ');
 
     await this.mailService.sendMail({
       to: company.email,
@@ -141,18 +141,7 @@ export class CompanyService {
       subject: 'Mitarbeiter hinzufügen?',
       context: {
         message: requestJoinDto.message,
-        href: await this.verificationService.createTokenUrl({
-          type: VerificationType.COMPANY_JOIN_REQUEST,
-          id: authUserId + ':' + companyId,
-          expiresIn: COMPANY_EMAIL_EXPIRES_IN,
-          senderId: authUserId,
-          receiverId: companyId,
-          notificationId: notification.id,
-          data: {
-            semderEmail: sender.email,
-            senderName,
-          },
-        }),
+        href: this.notificationService.generateWebappUrl(notification),
       }
     });
   }

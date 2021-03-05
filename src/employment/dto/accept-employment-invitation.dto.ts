@@ -1,9 +1,9 @@
 import { Type } from 'class-transformer';
-import { IsDate, IsInt, Min, Max, IsArray, ArrayMinSize, ArrayUnique, IsString } from 'class-validator';
+import { IsDate, IsInt, Min, Max, IsArray, ArrayMinSize, ArrayUnique, IsUUID } from 'class-validator';
 
 export class AcceptEmploymentInvitationDto {
-  @IsString()
-  public token: string;
+  @IsUUID()
+  public notificationId: string;
 
   @IsInt()
   public professionId: number;

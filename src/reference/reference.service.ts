@@ -101,15 +101,6 @@ export class ReferenceService {
       type: NotificationType.REFERENCE_INVITE,
     });
 
-    const tokenUrl = await this.verificationService.createTokenUrl({
-      type: VerificationType.REFERENCE_INVITE,
-      id: userId + ':' + refUserId,
-      receiverId: refUserId,
-      senderId: userId,
-      expiresIn: REF_INVITATION_EXP,
-      notificationId: notification.id,
-    });
-
     await this.mailerService.sendMail({
       to: refUser.email,
       subject: 'Anfrage zur Referenzerstellung',
@@ -119,34 +110,26 @@ export class ReferenceService {
         senderName: user.firstName + ' ' + user.lastName,
         senderPicture: user.picture || this.configService.get('defaultUserPicture'),
         senderAddress: [user.addresses?.[0]?.zip, user.addresses?.[0]?.city].filter(Boolean).join(' '),
-        href: `${tokenUrl}&userId=${user.id}&refUserId=${refUserId}`,
+        href: this.notificationService.generateWebappUrl(notification),
       },
     });
   }
 
   public async create(createReferenceDto: CreateReferenceDto, authUserId: string): Promise<void> {
-    const { senderId, receiverId } = await this.verificationService.validateToken(createReferenceDto.token, {
-      type: VerificationType.REFERENCE_INVITE,
-      senderId: createReferenceDto.userId,
+    const { user: refUser, fromUser: user } = await this.notificationService.notificationRepo.findOneOrFail({
+      where: { id: createReferenceDto.notificationId, userId: authUserId },
+      relations: ['user', 'fromUser', 'user.addresses'],
     });
 
-    if (authUserId !== receiverId) {
-      throw new ForbiddenException();
-    }
-
     const reference = this.referenceRepo.create({
-      userId: senderId,
-      refUserId: receiverId,
+      userId: user.id,
+      refUserId: authUserId,
       description: createReferenceDto.description,
       criterias: createReferenceDto.criterias,
       rating: createReferenceDto.rating,
     });
 
-    const [user, refUser] = await Promise.all([
-      this.userService.userRepo.findOne({ where: { id: senderId }, select: ['email', 'firstName', 'lastName'] }),
-      this.userService.userRepo.findOne({ where: { id: receiverId }, select: ['firstName', 'lastName', 'picture'], relations: ['addresses'] }),
-      this.referenceRepo.save(reference),
-    ]);
+    await this.referenceRepo.save(reference);
 
     this.mailerService.sendMail({
       to: user.email,
@@ -156,7 +139,7 @@ export class ReferenceService {
         receiverName: user.firstName + ' ' + user.lastName,
         senderPicture: refUser.picture || this.configService.get('defaultUserPicture'),
         senderName: refUser.firstName + ' ' + refUser.lastName,
-        senderAddress: [user.addresses?.[0]?.zip, user.addresses?.[0]?.city].filter(Boolean).join(' '),
+        senderAddress: [refUser.addresses?.[0]?.zip, refUser.addresses?.[0]?.city].filter(Boolean).join(' '),
         href: this.configService.get('webAppDomain') + 'network/reference',
       }
     })
