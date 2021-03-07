@@ -45,7 +45,7 @@ export class SubscriptionService {
   ) {}
 
   public async create(createSubscriptionDto: CreateSubscriptionDto, authUserId: string): Promise<Subscription> {
-    const { password, jobAmount = 0, planId = null, stripeToken, companyId } = createSubscriptionDto;
+    const { password, jobAmount = 0, planId = null, stripeToken, companyId, metadata = {} } = createSubscriptionDto;
 
     const [staff] = await Promise.all([
       this.employmentService.employmentRepo.findOneOrFail({
@@ -68,6 +68,9 @@ export class SubscriptionService {
         amount,
         source: stripeToken,
         currency: CURRENCY,
+        metadata: {
+          ...metadata,
+        },
       });
     } catch (e) {
       throw new InternalServerErrorException();

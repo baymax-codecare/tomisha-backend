@@ -1,4 +1,4 @@
-import { IsInt, IsNotEmpty, IsString, IsUUID, MaxLength } from 'class-validator';
+import { IsInt, IsNotEmpty, IsObject, IsString, IsUUID, MaxLength } from 'class-validator';
 
 export class CreateSubscriptionDto {
   @IsString()
@@ -10,6 +10,10 @@ export class CreateSubscriptionDto {
   @IsString()
   @IsNotEmpty()
   public stripeToken: string;
+
+  @IsObject()
+  @MaxLength(500)
+  public metadata: object;
 
   @IsUUID()
   public companyId: string;
