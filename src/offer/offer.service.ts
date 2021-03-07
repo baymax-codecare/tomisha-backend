@@ -25,25 +25,37 @@ export class OfferService {
     private userService: UserService,
   ) {}
 
-  public async findMyOffers(authUserId: string): Promise<{ items: Offer[], total: number }> {
-    return this.offerRepo
+  public async findMyOffers(authUserId: string, agencyId?: string): Promise<{ items: Offer[], total: number }> {
+    if (agencyId) {
+      await this.employmentService.verifyPermission(authUserId, agencyId);
+    }
+
+    const qb = this.offerRepo
       .createQueryBuilder('of')
       .innerJoin('of.job', 'job')
       .innerJoin('job.profession', 'prof')
       .innerJoin('job.branch', 'bran')
-      .innerJoinAndMapOne('branch.address', 'branch.addresses', 'addr')
-      .where('of.userId = :authUserId', { authUserId })
+      .innerJoinAndMapOne('bran.address', 'bran.addresses', 'addr');
+
+    if (agencyId) {
+      qb
+        .where('of.agentId = :authUserId', { authUserId })
+        .andWhere('of.agencyId = :agencyId', { agencyId });
+    } else {
+      qb.where('of.userId = :authUserId', { authUserId });
+    }
+
+    return qb
       .andWhere(qb =>
         'NOT EXISTS ' + qb.subQuery()
           .select('log.id')
           .from(JobLog, 'log')
           .where('log.offerId = of.id')
-          .andWhere('log.status >= :yesAction', { yesAction: JobLogAction.YES })
+          .andWhere('log.action >= :yesAction', { yesAction: JobLogAction.YES })
           .getQuery()
       )
       .select([
       'of.id',
-      'of.status',
       'of.updatedAt',
       'prof.id',
       'prof.title',
@@ -75,7 +87,7 @@ export class OfferService {
       .innerJoin('of.job', 'job');
 
     if (companyId) {
-      qb.where('of.companyId = :companyId OR of.agencyId = :companyId', { companyId });
+      qb.where('(of.companyId = :companyId OR of.agencyId = :companyId)', { companyId });
     }
 
     if (jobId) {

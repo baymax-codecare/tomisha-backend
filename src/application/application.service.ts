@@ -30,8 +30,8 @@ export class ApplicationService {
       .innerJoin('ap.occupation', 'oc')
       .innerJoin('oc.profession', 'prof')
       .innerJoin('job.branch', 'bran')
-      .innerJoinAndMapOne('branch.address', 'branch.addresses', 'addr')
-      .leftJoin('job.logs', 'log')
+      .innerJoinAndMapOne('bran.address', 'bran.addresses', 'addr')
+      .leftJoin('ap.logs', 'log')
       .where('ap.userId = :authUserId', { authUserId })
       // .andWhere(qb =>
       //   'NOT EXISTS ' + qb.subQuery()
@@ -44,7 +44,6 @@ export class ApplicationService {
       .select([
         'ap.id',
         'ap.occupationId',
-        'ap.status',
         'ap.updatedAt',
         'oc.id',
         'oc.slug',
@@ -201,7 +200,11 @@ export class ApplicationService {
   }
 
   public async createApplicationLog(createApplicationLogDto: CreateApplicationLogDto, authUserId: string): Promise<void> {
-    const { action, applicationId, applicationIds } = createApplicationLogDto;
+    const { action, applicationId, applicationIds, password } = createApplicationLogDto;
+    if (action === JobLogAction.NO) {
+      await this.authService.verifyPassword(authUserId, password);
+    }
+
     const ids = applicationIds.concat(applicationId).filter(Boolean);
     const isUser = action === JobLogAction.DELETE;
 

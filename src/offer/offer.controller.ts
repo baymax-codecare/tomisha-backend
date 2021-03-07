@@ -1,6 +1,6 @@
 import { Controller, Get, Req, Param, Post, Body, UseGuards, ParseIntPipe, Res, Query, ParseUUIDPipe } from '@nestjs/common';
 import { OfferService } from './offer.service';
-import { CreateOfferDto, CreateOfferLogDto, FindOffersDto } from './dto';
+import { CreateOfferDto, CreateOfferLogDto, FindMyOffersDto, FindOffersDto } from './dto';
 import { JwtAuthGuard } from 'src/auth/jwt.guard';
 import { Request, Response } from 'express';
 
@@ -15,8 +15,8 @@ export class OfferController {
   }
 
   @Get('me')
-  public findMyOffers(@Req() req: Request) {
-    return this.offerService.findMyOffers(req.user.id);
+  public findMyOffers(@Query() findMyOffersDto: FindMyOffersDto, @Req() req: Request) {
+    return this.offerService.findMyOffers(req.user.id, findMyOffersDto.agencyId);
   }
 
   @Get(':id')

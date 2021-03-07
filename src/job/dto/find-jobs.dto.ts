@@ -8,10 +8,6 @@ export class FindJobsDto extends PaginationDto<Job> {
   @IsOptional()
   public companyId?: string;
 
-  @IsUUID()
-  @IsOptional()
-  public branchId?: string;
-
   @Type(() => Number)
   @IsInt()
   @IsOptional()
@@ -43,6 +39,10 @@ export class FindJobsDto extends PaginationDto<Job> {
   @IsString()
   @IsOptional()
   public relationships?: string;
+
+  @IsString()
+  @IsOptional()
+  public branchIds?: string;
 
   @IsString()
   @MaxLength(200)

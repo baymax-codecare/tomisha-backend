@@ -12,7 +12,7 @@ import { VerificationService } from 'src/verification/verification.service';
 import { NotificationService } from 'src/notification/notification.service';
 import { NotificationType } from 'src/notification/type/notification-type.enum';
 import { VerificationType } from 'src/verification/type/verification-type.enum';
-import { LessThan, LessThanOrEqual } from 'typeorm';
+import { LessThanOrEqual } from 'typeorm';
 import { UserType } from 'src/user/type/user-type.enum';
 
 const FORGOT_PW_EXP_SEC = 24 * 60 * 60; // 1d

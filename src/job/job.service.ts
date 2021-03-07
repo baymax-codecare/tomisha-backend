@@ -130,7 +130,7 @@ export class JobService {
   public find(findJobsDto: FindJobsDto): Promise<{ items: Job[], total: number }> {
     const {
       companyId,
-      branchId,
+      branchIds,
       order = 'publishAt',
       asc = false,
       skip = 0,
@@ -176,8 +176,8 @@ export class JobService {
       qb.where('job.companyId = :companyId', { companyId });
     }
 
-    if (branchId) {
-      qb.where('job.companyId = :companyId', { companyId });
+    if (branchIds) {
+      qb.where('job.companyId IN (:...branchIds)', { branchIds: branchIds.split(',').filter(Boolean) });
     }
 
     if (title) {
@@ -185,7 +185,7 @@ export class JobService {
     }
 
     if (relationships) {
-      qb.andWhere('job.relationships IN (:...relationships)', { relationships: relationships.split('-').filter(Boolean).map((v) => +v) });
+      qb.andWhere('job.relationships IN (:...relationships)', { relationships: relationships.split(',').filter(Boolean).map((v) => +v) });
     }
 
     if (professionId) {
@@ -201,11 +201,11 @@ export class JobService {
     }
 
     if (sizes) {
-      const where = sizes.split('-').map((size) => size.split('_')).map(([min, max]) => {
+      const where = sizes.split(',').map((size) => size.split('_')).map(([min, max]) => {
         return `branch.size BETWEEN ${+min} AND ${+max}`
       }).join(' OR ')
 
-      qb.andWhere(where);
+      qb.andWhere(`(${where})`);
     }
 
     if (lng && lat) {

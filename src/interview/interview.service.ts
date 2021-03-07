@@ -27,19 +27,18 @@ export class InterviewService {
       .innerJoin('in.job', 'job')
       .innerJoin('job.profession', 'prof')
       .innerJoin('job.branch', 'bran')
-      .innerJoinAndMapOne('branch.address', 'branch.addresses', 'addr')
+      .innerJoinAndMapOne('bran.address', 'bran.addresses', 'addr')
       .where('in.userId = :authUserId', { authUserId })
       .andWhere(qb =>
         'NOT EXISTS ' + qb.subQuery()
           .select('log.id')
           .from(JobLog, 'log')
           .where('log.interviewId = in.id')
-          .andWhere('log.status >= :yesAction', { yesAction: JobLogAction.YES })
+          .andWhere('log.action >= :yesAction', { yesAction: JobLogAction.YES })
           .getQuery()
       )
       .select([
       'in.id',
-      'in.status',
       'in.updatedAt',
       'prof.id',
       'prof.title',

@@ -1,4 +1,4 @@
-import { IsArray, IsEnum, IsInt, IsOptional } from 'class-validator';
+import { IsArray, IsEnum, IsInt, IsOptional, IsString } from 'class-validator';
 import { JobLogAction } from 'src/job-log/type/job-log-action.enum';
 
 export class CreateApplicationLogDto {
@@ -12,4 +12,8 @@ export class CreateApplicationLogDto {
 
   @IsEnum(JobLogAction)
   public action: JobLogAction;
+
+  @IsString()
+  @IsOptional()
+  public password?: string;
 }
