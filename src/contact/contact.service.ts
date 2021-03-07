@@ -19,50 +19,64 @@ export class ContactService {
     private configService: ConfigService,
   ) {}
 
-  public find (findContactsDto: FindContactsDto, authUserId: string): Promise<{ total: number, items: Contact[] }> {
+  public getContactCount(authUserId: string): Promise<{ total: number }> {
+    return this.contactRepo.count({
+      where: [
+        { contactUserId: authUserId, status: ContactStatus.ACTIVE },
+        { userId: authUserId, status: ContactStatus.ACTIVE },
+      ],
+    }).then(total => ({ total }));
+  }
+
+  public find(findContactsDto: FindContactsDto, authUserId: string): Promise<{ total: number, items: Contact[] }> {
     const {
       order = 'updatedAt',
       asc = false,
       skip = 0,
       take = 10,
       status = ContactStatus.ACTIVE,
-      name
+      name,
     } = findContactsDto;
 
     const qb = this.contactRepo
       .createQueryBuilder('contact')
-      .select(['contact.id', 'contact.status', 'contact.acceptedAt'])
+      .select(['contact.id', 'contact.status', 'contact.acceptedAt', 'contact.updatedAt'])
 
     if (status === ContactStatus.BLOCKED) {
       qb
-        .innerJoin('contact.contactUserId', 'contactUser')
+        .innerJoin('contact.contactUser', 'contactUser')
         .innerJoinAndMapOne('contactUser.address', 'contactUser.addresses', 'caddress')
-        .where('contact.userId = :authUserId', { authUserId })
+        .where('contact.userId = :authUserId', { authUserId });
     } else {
       qb
-        .innerJoin('contact.userId', 'user', 'user.id IS NOT :authUserId', { authUserId })
-        .innerJoinAndMapOne('user.address', 'user.addresses', 'address')
-        .innerJoin('contact.contactUserId', 'contactUser', 'contactUser.id IS NOT :authUserId', { authUserId })
-        .innerJoinAndMapOne('contactUser.address', 'contactUser.addresses', 'caddress')
-        .where('contact.userId = :userId OR contact.contactUserId = :userId', { userId: authUserId })
-        .addSelect(['user.id', 'user.slug', 'user.status', 'user.firstName', 'user.lastName', 'user.picture', 'address.zip', 'address.city', 'address.text']);
+        .leftJoin('contact.user', 'user', 'user.id != :authUserId', { authUserId })
+        .leftJoinAndMapOne('user.address', 'user.addresses', 'address')
+        .leftJoin('contact.contactUser', 'contactUser', 'contactUser.id != :authUserId', { authUserId })
+        .leftJoinAndMapOne('contactUser.address', 'contactUser.addresses', 'caddress')
+        .where('(contact.userId = :userId OR contact.contactUserId = :userId)', { userId: authUserId })
+        .addSelect(['user.id', 'user.slug', 'user.status', 'user.firstName', 'user.lastName', 'user.picture', 'address.zip', 'address.city']);
+    }
+
+    if (status === ContactStatus.READ) {
+      qb.andWhere('contact.status <= :status', { status });
+    } else {
+      qb.andWhere('contact.status = :status', { status });
     }
 
     if (name) {
-      qb.andWhere('LOWER(user.firstName) LIKE :name OR LOWER(user.lastName) LIKE :name', { name: `%${name.toLowerCase()}%` });
+      qb.andWhere('(LOWER(user.firstName) LIKE :name OR LOWER(user.lastName) LIKE :name)', { name: `%${name.toLowerCase()}%` });
     }
 
     return qb
-      .addSelect(['contactUser.id', 'contactUser.slug', 'contactUser.status', 'contactUser.firstName', 'contactUser.lastName', 'contactUser.picture', 'caddress.zip', 'caddress.text', 'caddress.city'])
-      .andWhere('contact.status = :status', { status })
-      .orderBy(`contact.${order}`, asc ? 'ASC' : 'DESC')
+      .addSelect(['contactUser.id', 'contactUser.slug', 'contactUser.status', 'contactUser.firstName', 'contactUser.lastName', 'contactUser.picture', 'caddress.zip', 'caddress.city'])
+      .orderBy('contact.' + order, asc ? 'ASC' : 'DESC')
       .skip(skip)
       .take(take)
       .getManyAndCount()
       .then(([items, total]) => ({ items, total }));
   }
 
-  public async blockUser (userId: string, authUserId: string): Promise<void> {
+  public async blockUser(userId: string, authUserId: string): Promise<void> {
     const existedContact = await this.contactRepo.findOne({
       where: [
         { userId, contactUserId: authUserId },
@@ -79,7 +93,7 @@ export class ContactService {
     await this.contactRepo.save(contact);
   }
 
-  public async invite (userId: string, authUserId: string): Promise<void> {
+  public async invite(userId: string, authUserId: string): Promise<void> {
     const existedContact = await this.contactRepo.findOne({
       where: [
         { userId, contactUserId: authUserId },
@@ -96,11 +110,11 @@ export class ContactService {
       this.userService.userRepo.findOneOrFail({
         where: { id: userId, status: Not(In([UserStatus.DEACTIVATED, UserStatus.LOCKED])) },
         select: ['id', 'email', 'firstName', 'lastName'],
-        relations: ['addresses'],
       }),
       this.userService.userRepo.findOneOrFail({
         where: { id: authUserId },
         select: ['id', 'slug', 'firstName', 'lastName', 'picture', 'status'],
+        relations: ['addresses'],
       }),
     ]);
 
@@ -112,8 +126,8 @@ export class ContactService {
         receiverName: [receiver.firstName, receiver.lastName].filter(Boolean).join(' '),
         senderName: [sender.firstName, sender.lastName].filter(Boolean).join(' '),
         senderPicture: sender.picture || this.configService.get('defaultUserPicture'),
-        senderAddress: [sender.addresses[0]?.zip, sender.addresses[0]?.city].filter(Boolean).join(' '),
-        href: this.configService.get('webAppDomain') + 'network/invitation',
+        senderAddress: [sender.addresses?.[0]?.zip, sender.addresses?.[0]?.city].filter(Boolean).join(' '),
+        href: this.configService.get('webAppDomain') + 'network/invitations',
       },
     });
 
@@ -127,7 +141,7 @@ export class ContactService {
     const contact = await this.contactRepo.createQueryBuilder('contact')
       .where('contact.id = :id', { id })
       .andWhere('contact.status IS NOT :activeStatus', { activeStatus: ContactStatus.ACTIVE })
-      .andWhere('contact.userId = :userId OR contact.contactUserId = :userId', { userId: authUserId })
+      .andWhere('(contact.userId = :userId OR contact.contactUserId = :userId)', { userId: authUserId })
       .select('contact')
       .getOne();
 
@@ -144,7 +158,7 @@ export class ContactService {
       .update()
       .set({ status: ContactStatus.READ })
       .where('contact.status = :unreadStatus', { unreadStatus: ContactStatus.UNREAD })
-      .andWhere('contact.userId = :userId OR contact.contactUserId = :userId', { userId: authUserId })
+      .andWhere('(contact.userId = :userId OR contact.contactUserId = :userId)', { userId: authUserId })
       .execute();
   }
 
@@ -153,7 +167,7 @@ export class ContactService {
       .createQueryBuilder('contact')
       .delete()
       .where('id = :id', { id })
-      .andWhere('contact.userId = :userId OR contact.contactUserId = :userId', { userId: authUserId })
+      .andWhere('(contact.userId = :userId OR contact.contactUserId = :userId)', { userId: authUserId })
       .execute();
   }
 
@@ -161,7 +175,7 @@ export class ContactService {
     return !!(
       await this.contactRepo.createQueryBuilder('c')
         .where('c.status = :blockedStatus', { blockedStatus: ContactStatus.BLOCKED })
-        .andWhere('(c.userId = :userId AND c.contactUserId = :viewerId) OR (c.userId = :viewerId AND c.contactUserId = :userId)', { userId, viewerId })
+        .andWhere('((c.userId = :userId AND c.contactUserId = :viewerId) OR (c.userId = :viewerId AND c.contactUserId = :userId))', { userId, viewerId })
         .select('id')
         .getOne()
     );

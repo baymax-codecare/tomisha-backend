@@ -43,7 +43,7 @@ module.exports = [
   },
   {
     name: 'seed',
-    migrationsTableName: 'exSeeds',
+    migrationsTableName: 'seeds',
     migrations: [`scripts/seeds/${argvs._[1]}.ts`],
     cli: {
       migrationsDir: 'scripts/seeds',

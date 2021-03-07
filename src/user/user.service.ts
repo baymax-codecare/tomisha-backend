@@ -72,7 +72,7 @@ export class UserService {
       .addSelect(
         sq => sq.select('COUNT(*)', 'contactCount')
           .from(Contact, 'cc')
-          .where('cc.userId = user.id OR cc.contactUserId = user.id'),
+          .where(('cc.userId = user.id OR cc.contactUserId = user.id')),
         'contactCount',
       )
       .addSelect(
@@ -91,7 +91,7 @@ export class UserService {
         .leftJoin(
           Contact,
           'c',
-          '(c.userId = :userId AND c.contactUserId = :authUserId) OR (c.userId = :authUserId AND c.contactUserId = :userId)',
+          '((c.userId = user.id AND c.contactUserId = :authUserId) OR (c.userId = :authUserId AND c.contactUserId = user.id))',
           { authUserId },
         )
         .andWhere('c.status != :blockedStatus', { blockedStatus: ContactStatus.BLOCKED })
@@ -195,28 +195,54 @@ export class UserService {
 
   public search(findUsersDto: FindUsersDto, authUserId: string): Promise<{ items: User[], total: number }> {
     const {
+      order = 'createdAt',
+      asc = false,
+      skip = 0,
+      take = 3,
       firstName,
       lastName,
+      friend,
     } = findUsersDto;
 
     const qb = this.userRepo
       .createQueryBuilder('user')
+      .select(['user.picture', 'user.id', 'user.slug', 'user.firstName', 'user.lastName', 'user.status', 'user.createdAt', 'address.city', 'address.zip'])
       .leftJoinAndMapOne('user.address', 'user.addresses', 'address')
-      .where('user.status != :deactivatedStatus', { status: UserStatus.DEACTIVATED })
-      .andWhere('user.status != :lockedStatus', { lockedStatus: UserStatus.LOCKED })
-      .andWhere('user.id != :authUserId', { authUserId })
-      .select(['user.picture', 'user.id', 'user.slug', 'user.firstName', 'user.lastName', 'user.status', 'address.city', 'address.zip', 'address.text'])
-      .take(50);
+      // .where('user.status NOT IN (:...inactiveStatuses)', { inactiveStatuses: [UserStatus.DEACTIVATED, UserStatus.LOCKED] })
+      .andWhere('user.id != :authUserId', { authUserId });
 
     if (firstName) {
       qb.andWhere('LOWER(user.firstName) LIKE :firstName', { firstName: `%${firstName.toLowerCase()}%` });
     }
 
     if (lastName) {
-      qb.andWhere('LOWER(user.firstName) LIKE :lastName', { lastName: `%${lastName.toLowerCase()}%` });
+      qb.andWhere('LOWER(user.lastName) LIKE :lastName', { lastName: `%${lastName.toLowerCase()}%` });
     }
 
-    return qb.getManyAndCount().then(([items, total]) => ({ items, total }));
+    if (friend) {
+      qb.andWhere(
+        qb => `${friend ? '' : 'NOT '}EXISTS` + qb.subQuery()
+          .select('c.id')
+          .from(Contact, 'c')
+          .where('(c.userId = user.id AND c.contactUserId = :authUserId) OR (c.userId = :authUserId AND c.contactUserId = user.id)', { authUserId })
+          .getQuery()
+      )
+    }
+
+    const sortOrder = asc ? 'ASC' : 'DESC';
+    if (order === 'name') {
+      qb
+        .orderBy('user.firstName', sortOrder)
+        .addOrderBy('user.lastName', sortOrder);
+    } else {
+      qb.orderBy(`user.${order}`, asc ? 'ASC' : 'DESC');
+    }
+
+    return qb
+      .take(take)
+      .skip(skip)
+      .getManyAndCount()
+      .then(([items, total]) => ({ items, total }));
   }
 
   public async searchOne(searchUserDto: SearchUserDto, authUserId: string): Promise<User> {

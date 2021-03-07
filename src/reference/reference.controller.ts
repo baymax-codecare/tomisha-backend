@@ -10,9 +10,14 @@ import { ReferenceService } from './reference.service';
 export class ReferenceController {
   constructor (private referenceService: ReferenceService) {}
 
-  @Get()
-  public findMyReferences (@Req() req: any): Promise<Reference[]> {
+  @Get('me')
+  public findMyReferences (@Req() req: Request): Promise<Reference[]> {
     return this.referenceService.findMyReferences(req.user.id);
+  }
+
+  @Get('sent')
+  public findMySentReferences(@Req() req: Request) {
+    return this.referenceService.findMySentReferences(req.user.id);
   }
 
   @Get('user/:userId')

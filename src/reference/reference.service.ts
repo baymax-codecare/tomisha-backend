@@ -42,6 +42,18 @@ export class ReferenceService {
     });
   }
 
+  public findMySentReferences (authUserId: string): Promise<Reference[]> {
+    return this.referenceRepo.find({
+      where: {
+        refUserId: authUserId,
+      },
+      order: {
+        createdAt: 'DESC'
+      },
+      relations: ['user'],
+    });
+  }
+
   public findReferencesByUserId (userId: string, authUserId: string): Promise<Reference[]> {
     return this.referenceRepo
       .createQueryBuilder('ref')
