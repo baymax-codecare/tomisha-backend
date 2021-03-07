@@ -37,7 +37,7 @@ export class Interview extends EntityTimestamp {
   @Column({ length: 100, nullable: true })
   public message: string;
 
-  @Column('time', { nullable: true })
+  @Column({ nullable: true })
   public startAt: Date;
 
   @OneToMany(() => JobLog, jobLog => jobLog.interview)

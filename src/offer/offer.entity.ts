@@ -46,7 +46,7 @@ export class Offer extends EntityTimestamp {
   @Column({ length: 500, nullable: true })
   public agentMessage: string;
 
-  @Column('time', { nullable: true })
+  @Column({ nullable: true })
   public startAt: Date;
 
   @OneToMany(() => JobLog, jobLog => jobLog.offer)

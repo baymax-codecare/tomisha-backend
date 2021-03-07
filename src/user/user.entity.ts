@@ -85,7 +85,7 @@ export class User extends EntityTimestamp {
   @Column({ nullable: true, length: 20, default: 'ch' })
   public locale: string;
 
-  @Column('time', { nullable: true })
+  @Column({ nullable: true })
   public lastActiveAt: Date;
 
   @Column('smallint', { array: true, nullable: true })

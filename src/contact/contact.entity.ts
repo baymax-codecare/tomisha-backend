@@ -17,10 +17,10 @@ export class Contact extends EntityTimestamp {
   @Column('smallint', { default: ContactStatus.UNREAD })
   public status: ContactStatus;
 
-  @Column('time', { nullable: true })
+  @Column({ nullable: true })
   public invitedAt: Date;
 
-  @Column('time', { nullable: true })
+  @Column({ nullable: true })
   public acceptedAt: Date;
 
   @ManyToOne(() => User, { onDelete: 'CASCADE' })
