@@ -1,8 +1,8 @@
 import { Type } from 'class-transformer';
-import { IsDate, IsInt, Min, Max, IsArray, ArrayMinSize, ArrayUnique, IsUUID } from 'class-validator';
+import { IsDate, IsInt, Min, Max, IsArray, ArrayMinSize, ArrayUnique } from 'class-validator';
 
 export class AcceptEmploymentInvitationDto {
-  @IsUUID()
+  @IsInt()
   public notificationId: string;
 
   @IsInt()
@@ -10,7 +10,7 @@ export class AcceptEmploymentInvitationDto {
 
   @Type(() => Date)
   @IsDate()
-  public startAt: Date;
+  public startedAt: Date;
 
   @IsInt()
   @Min(0)

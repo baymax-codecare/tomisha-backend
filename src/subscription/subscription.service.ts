@@ -1,5 +1,5 @@
 import { MoreThanOrEqual, Repository } from 'typeorm';
-import { Injectable, InternalServerErrorException } from '@nestjs/common';
+import { BadRequestException, Injectable, InternalServerErrorException, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { InjectStripe } from 'nestjs-stripe';
 import Stripe from 'stripe';
@@ -44,6 +44,15 @@ export class SubscriptionService {
     private authService: AuthService,
   ) {}
 
+  public async findCoupon(couponId: string) {
+    const coupon = await this.stripeClient.coupons.retrieve(couponId).catch(() => null);
+    if (!coupon?.valid) {
+      throw new NotFoundException();
+    }
+
+    return coupon;
+  }
+
   public async create(createSubscriptionDto: CreateSubscriptionDto, authUserId: string): Promise<Subscription> {
     const { password, jobAmount = 0, planId = null, stripeToken, companyId, metadata = {} } = createSubscriptionDto;
 
@@ -73,7 +82,7 @@ export class SubscriptionService {
         },
       });
     } catch (e) {
-      throw new InternalServerErrorException();
+      throw new BadRequestException('Invalid credit card');
     }
 
     const promises = [];

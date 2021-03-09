@@ -1,8 +1,8 @@
-import { IsString, IsUUID, IsEnum, IsOptional, MaxLength } from 'class-validator';
+import { IsString, IsInt, IsUUID, IsEnum, IsOptional, MaxLength } from 'class-validator';
 import { EmploymentRole } from '../type/employment-role.enum';
 
 export class CreateEmploymentDto {
-  @IsUUID()
+  @IsInt()
   public notificationId: string;
 
   @IsUUID()

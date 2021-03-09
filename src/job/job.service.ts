@@ -177,7 +177,7 @@ export class JobService {
     }
 
     if (branchIds) {
-      qb.where('job.companyId IN (:...branchIds)', { branchIds: branchIds.split(',').filter(Boolean) });
+      qb.where('job.companyId IN (:...branchIds)', { branchIds: decodeURIComponent(branchIds).split(',').filter(Boolean) });
     }
 
     if (title) {

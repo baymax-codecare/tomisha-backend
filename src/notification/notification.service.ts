@@ -95,6 +95,6 @@ export class NotificationService {
 
   public generateWebappUrl(notification: Notification) {
     return this.configService.get('webAppDomain') +
-      `notification/${notification.id}?type=${notification.type}&receiverId=${notification.userId || notification.companyId}`;
+      `notification?notificationId=${notification.id}&type=${notification.type}&receiverId=${notification.userId || notification.companyId}`;
   }
 }

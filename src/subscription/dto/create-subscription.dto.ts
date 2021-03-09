@@ -1,10 +1,16 @@
-import { IsInt, IsNotEmpty, IsObject, IsString, IsUUID, MaxLength } from 'class-validator';
+import { IsInt, IsNotEmpty, IsObject, IsOptional, IsString, IsUUID, MaxLength } from 'class-validator';
 
 export class CreateSubscriptionDto {
   @IsString()
+  @IsOptional()
   public planId?: string;
 
+  @IsString()
+  @IsOptional()
+  public couponId?: string;
+
   @IsInt()
+  @IsOptional()
   public jobAmount?: number;
 
   @IsString()
@@ -12,7 +18,6 @@ export class CreateSubscriptionDto {
   public stripeToken: string;
 
   @IsObject()
-  @MaxLength(500)
   public metadata: object;
 
   @IsUUID()

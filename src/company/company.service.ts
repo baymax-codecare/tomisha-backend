@@ -11,6 +11,7 @@ import { RequestJoinDto } from './dto';
 import { User } from 'src/user/user.entity';
 import { UserType } from 'src/user/type/user-type.enum';
 import { EmploymentPermission } from 'src/employment/type/employment-permission.enum';
+import { EmploymentRole } from 'src/employment/type/employment-role.enum';
 
 const COMPANY_EMAIL_EXPIRES_IN = 86400 * 5;
 
@@ -69,7 +70,7 @@ export class CompanyService {
     return this.userService.userRepo.createQueryBuilder('com')
       .leftJoinAndSelect('com.branches', 'bra')
       .leftJoinAndMapOne('bra.address', 'bra.addresses', 'bad')
-      .leftJoinAndSelect('com.staffs', 'sta')
+      .leftJoinAndSelect('com.staffs', 'sta', 'sta.role > :employeeRole', { employeeRole: EmploymentRole.EMPLOYEE })
       .leftJoinAndSelect('sta.profession', 'spr')
       .leftJoinAndSelect('sta.user', 'sus')
       .leftJoinAndMapOne('sus.address', 'sus.addresses', 'sad')

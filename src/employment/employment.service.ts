@@ -114,8 +114,8 @@ export class EmploymentService {
       await this.authService.verifyPassword(authUserId, password);
     }
 
-    const [receiver, sender, oldNotification] = await Promise.all([
-      this.userService.userRepo.findOneOrFail({ where: { email: userEmail }, select: ['firstName', 'lastName', 'email'] })
+    const [receiver, sender] = await Promise.all([
+      this.userService.userRepo.findOneOrFail({ where: { email: userEmail }, select: ['id', 'firstName', 'lastName', 'email'] })
         .catch(() => {
           throw new BadRequestException('User not found');
         }),
@@ -139,7 +139,7 @@ export class EmploymentService {
     await this.mailService.sendMail({
       to: receiver.email,
       subject: `${senderName} via Tomisha`,
-      template: 'employment-invitation',
+      template: 'staff-invitation',
       context: {
         receiverName: [receiver.firstName, receiver.lastName].filter(Boolean).join(' '),
         senderName,
