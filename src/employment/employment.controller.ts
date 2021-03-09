@@ -1,4 +1,4 @@
-import { Controller, Get, Query, Post, Body, Param, UseGuards, Req, Res, Patch } from '@nestjs/common';
+import { Controller, Get, Query, Post, Body, Param, UseGuards, Req, Res, Patch, ParseUUIDPipe } from '@nestjs/common';
 import { EmploymentService } from './employment.service';
 import { FindEmploymentsDto } from './dto/find-employments.dto';
 import { AcceptEmploymentInvitationDto, CreateEmploymentDto, InviteEmploymentDto, UpdateEmploymentDto } from './dto';
@@ -16,6 +16,11 @@ export class EmploymentController {
   @Get()
   public find(@Query() findEmploymentsDto: FindEmploymentsDto): Promise<Employment[]> {
     return this.employmentService.find(findEmploymentsDto);
+  }
+
+  @Get('candidate')
+  public findAgencyCandidates(@Query('agencyId', ParseUUIDPipe) agencyId: string, @Req() req: Request) {
+    return this.employmentService.findAgencyCandidates(agencyId, req.user.id)
   }
 
   @Post('invite')

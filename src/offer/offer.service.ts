@@ -305,9 +305,8 @@ export class OfferService {
 
     validOffers.forEach((offer) => {
       if (offer['isFinished']) {
-        this.employmentService.employmentRepo.insert({
+        this.employmentService.employmentRepo.insert(Object.assign({
           userId: offer.userId,
-          companyId: offer.companyId,
           occupationId: offer.application.occupationId,
           branchId: offer.job.branchId,
           professionId: offer.job.professionId,
@@ -318,7 +317,7 @@ export class OfferService {
           level: offer.job.level,
           years: offer.job.years,
           startedAt: offer.startAt,
-        });
+        }, offer.agencyId ? { agencyId: offer.agencyId, agentId: offer.agentId }: { companyId: offer.companyId }));
 
         this.userService.userRepo.update({ id: offer.userId }, { status: UserStatus.UNAVAILABLE })
       }

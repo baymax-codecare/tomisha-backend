@@ -21,6 +21,14 @@ export class Employment {
 
   @Index()
   @Column('uuid', { nullable: true })
+  public agencyId: string;
+
+  @Index()
+  @Column('uuid', { nullable: true })
+  public agentId: string;
+
+  @Index()
+  @Column('uuid', { nullable: true })
   public occupationId: string;
 
   @Column('uuid', { nullable: true })
@@ -79,4 +87,12 @@ export class Employment {
   @ManyToOne(() => User, company => company.staffs, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'companyId' })
   public company: User;
+
+  @ManyToOne(() => User, { onDelete: 'CASCADE' })
+  @JoinColumn({ name: 'agencyId' })
+  public agency: User;
+
+  @ManyToOne(() => User, { onDelete: 'CASCADE' })
+  @JoinColumn({ name: 'agentId' })
+  public agent: User;
 }

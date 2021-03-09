@@ -1,7 +1,7 @@
 import {MigrationInterface, QueryRunner} from "typeorm";
 
-export class CreateTables1615149247407 implements MigrationInterface {
-    name = 'CreateTables1615149247407'
+export class CreateTables1615306489499 implements MigrationInterface {
+    name = 'CreateTables1615306489499'
 
     public async up(queryRunner: QueryRunner): Promise<void> {
         await queryRunner.query(`CREATE TABLE "user-documents" ("id" SERIAL NOT NULL, "userId" uuid, "branchId" uuid, "group" smallint, "type" smallint, "front" character varying(250), "back" character varying(250), "issuedAt" date, CONSTRAINT "PK_36f76469066a56e4f4d53596a7f" PRIMARY KEY ("id"))`);
@@ -10,9 +10,11 @@ export class CreateTables1615149247407 implements MigrationInterface {
         await queryRunner.query(`CREATE TABLE "tag" ("id" SERIAL NOT NULL, "title" character varying(500) NOT NULL, "type" smallint NOT NULL DEFAULT 1, CONSTRAINT "PK_8e4052373c579afc1471f526760" PRIMARY KEY ("id"))`);
         await queryRunner.query(`CREATE TABLE "hard-skills" ("id" SERIAL NOT NULL, "skillId" integer NOT NULL, "level" smallint NOT NULL, "description" character varying(500), "jobId" uuid, "occupationId" uuid, CONSTRAINT "PK_d086ad35cd3de0305f978f5351a" PRIMARY KEY ("id"))`);
         await queryRunner.query(`CREATE TABLE "occupations" ("createdAt" TIMESTAMP NOT NULL DEFAULT now(), "updatedAt" TIMESTAMP NOT NULL DEFAULT now(), "id" uuid NOT NULL DEFAULT uuid_generate_v4(), "userId" uuid, "professionId" integer NOT NULL, "slug" character varying NOT NULL, "minWorkload" smallint NOT NULL DEFAULT 0, "maxWorkload" smallint NOT NULL DEFAULT 100, "relationships" smallint array, "specialSkill" character varying(250), "skillDescription" character varying, "shortDescription" character varying, CONSTRAINT "PK_0bf09083dd897df1e8ebb96b5c1" PRIMARY KEY ("id"))`);
-        await queryRunner.query(`CREATE TABLE "employments" ("id" SERIAL NOT NULL, "userId" uuid, "companyId" uuid, "occupationId" uuid, "branchId" uuid, "professionId" integer, "role" smallint, "relationships" smallint array, "minWorkload" smallint, "maxWorkload" smallint, "level" smallint, "years" smallint, "startedAt" date, "endedAt" date, "description" character varying, CONSTRAINT "PK_208f1abe9b236e156e33f9eeb58" PRIMARY KEY ("id"))`);
+        await queryRunner.query(`CREATE TABLE "employments" ("id" SERIAL NOT NULL, "userId" uuid, "companyId" uuid, "agencyId" uuid, "agentId" uuid, "occupationId" uuid, "branchId" uuid, "professionId" integer, "role" smallint, "relationships" smallint array, "minWorkload" smallint, "maxWorkload" smallint, "level" smallint, "years" smallint, "startedAt" date, "endedAt" date, "description" character varying, CONSTRAINT "PK_208f1abe9b236e156e33f9eeb58" PRIMARY KEY ("id"))`);
         await queryRunner.query(`CREATE INDEX "IDX_d968659c1dfdfce13ea4177b29" ON "employments" ("userId") `);
         await queryRunner.query(`CREATE INDEX "IDX_430e623062e10a8ac13d63bfd4" ON "employments" ("companyId") `);
+        await queryRunner.query(`CREATE INDEX "IDX_9523ebd6d2b9fb1935dff7b093" ON "employments" ("agencyId") `);
+        await queryRunner.query(`CREATE INDEX "IDX_e498ed8c25a82a8920643490f9" ON "employments" ("agentId") `);
         await queryRunner.query(`CREATE INDEX "IDX_bec3225c15f0053095db2b45d2" ON "employments" ("occupationId") `);
         await queryRunner.query(`CREATE INDEX "IDX_a02bff42caae40dd8dce450c75" ON "employments" ("role") `);
         await queryRunner.query(`CREATE TABLE "files" ("id" SERIAL NOT NULL, "name" character varying(250), "url" character varying(250), "userId" uuid, "degreeId" integer, "employmentId" integer, CONSTRAINT "PK_6c16b9093a142e0e7613b04a3d9" PRIMARY KEY ("id"))`);
@@ -70,6 +72,8 @@ export class CreateTables1615149247407 implements MigrationInterface {
         await queryRunner.query(`ALTER TABLE "employments" ADD CONSTRAINT "FK_bec3225c15f0053095db2b45d2c" FOREIGN KEY ("occupationId") REFERENCES "occupations"("id") ON DELETE CASCADE ON UPDATE NO ACTION`);
         await queryRunner.query(`ALTER TABLE "employments" ADD CONSTRAINT "FK_d968659c1dfdfce13ea4177b293" FOREIGN KEY ("userId") REFERENCES "users"("id") ON DELETE CASCADE ON UPDATE NO ACTION`);
         await queryRunner.query(`ALTER TABLE "employments" ADD CONSTRAINT "FK_430e623062e10a8ac13d63bfd48" FOREIGN KEY ("companyId") REFERENCES "users"("id") ON DELETE CASCADE ON UPDATE NO ACTION`);
+        await queryRunner.query(`ALTER TABLE "employments" ADD CONSTRAINT "FK_9523ebd6d2b9fb1935dff7b093b" FOREIGN KEY ("agencyId") REFERENCES "users"("id") ON DELETE CASCADE ON UPDATE NO ACTION`);
+        await queryRunner.query(`ALTER TABLE "employments" ADD CONSTRAINT "FK_e498ed8c25a82a8920643490f9b" FOREIGN KEY ("agentId") REFERENCES "users"("id") ON DELETE CASCADE ON UPDATE NO ACTION`);
         await queryRunner.query(`ALTER TABLE "files" ADD CONSTRAINT "FK_7e7425b17f9e707331e9a6c7335" FOREIGN KEY ("userId") REFERENCES "users"("id") ON DELETE CASCADE ON UPDATE NO ACTION`);
         await queryRunner.query(`ALTER TABLE "files" ADD CONSTRAINT "FK_cd5d1829a822e265b091f6808f3" FOREIGN KEY ("degreeId") REFERENCES "degrees"("id") ON DELETE CASCADE ON UPDATE NO ACTION`);
         await queryRunner.query(`ALTER TABLE "files" ADD CONSTRAINT "FK_aa688b0d6972a88499390d81847" FOREIGN KEY ("employmentId") REFERENCES "employments"("id") ON DELETE CASCADE ON UPDATE NO ACTION`);
@@ -175,6 +179,8 @@ export class CreateTables1615149247407 implements MigrationInterface {
         await queryRunner.query(`ALTER TABLE "files" DROP CONSTRAINT "FK_aa688b0d6972a88499390d81847"`);
         await queryRunner.query(`ALTER TABLE "files" DROP CONSTRAINT "FK_cd5d1829a822e265b091f6808f3"`);
         await queryRunner.query(`ALTER TABLE "files" DROP CONSTRAINT "FK_7e7425b17f9e707331e9a6c7335"`);
+        await queryRunner.query(`ALTER TABLE "employments" DROP CONSTRAINT "FK_e498ed8c25a82a8920643490f9b"`);
+        await queryRunner.query(`ALTER TABLE "employments" DROP CONSTRAINT "FK_9523ebd6d2b9fb1935dff7b093b"`);
         await queryRunner.query(`ALTER TABLE "employments" DROP CONSTRAINT "FK_430e623062e10a8ac13d63bfd48"`);
         await queryRunner.query(`ALTER TABLE "employments" DROP CONSTRAINT "FK_d968659c1dfdfce13ea4177b293"`);
         await queryRunner.query(`ALTER TABLE "employments" DROP CONSTRAINT "FK_bec3225c15f0053095db2b45d2c"`);
@@ -232,6 +238,8 @@ export class CreateTables1615149247407 implements MigrationInterface {
         await queryRunner.query(`DROP TABLE "files"`);
         await queryRunner.query(`DROP INDEX "IDX_a02bff42caae40dd8dce450c75"`);
         await queryRunner.query(`DROP INDEX "IDX_bec3225c15f0053095db2b45d2"`);
+        await queryRunner.query(`DROP INDEX "IDX_e498ed8c25a82a8920643490f9"`);
+        await queryRunner.query(`DROP INDEX "IDX_9523ebd6d2b9fb1935dff7b093"`);
         await queryRunner.query(`DROP INDEX "IDX_430e623062e10a8ac13d63bfd4"`);
         await queryRunner.query(`DROP INDEX "IDX_d968659c1dfdfce13ea4177b29"`);
         await queryRunner.query(`DROP TABLE "employments"`);

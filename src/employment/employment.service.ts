@@ -47,7 +47,7 @@ export class EmploymentService {
       .createQueryBuilder('em')
       .leftJoin('em.profession', 'prof')
       .innerJoin('em.user', 'user')
-      .where('em.role != NULL');
+      .where('em.role > :employeeRole', { employeeRole: EmploymentRole.EMPLOYEE });
 
     if (branchId) {
       qb.andWhere('em.branchId = :branchId', { branchId: findEmploymentsDto.branchId });
@@ -66,6 +66,43 @@ export class EmploymentService {
         'user.picture',
         'user.firstName',
         'user.lastName',
+      ])
+      .getMany();
+  }
+
+  public async findAgencyCandidates(agencyId: string, authUserId: string): Promise<Employment[]> {
+    await this.verifyPermission(agencyId, authUserId);
+    return this.employmentRepo
+      .createQueryBuilder('em')
+      .leftJoin('em.profession', 'prof')
+      .leftJoin('em.agent', 'agent')
+      .leftJoin('em.branch', 'bran')
+      .innerJoin('em.user', 'user')
+      .leftJoinAndMapOne('bran.address', 'bran.addresses', 'badr')
+      .where('em.agencyId = :agencyId', { agencyId })
+      .andWhere('em.role = :employeeRole', { employeeRole: EmploymentRole.EMPLOYEE })
+      .select([
+        'em.id',
+        'prof.title',
+        'user.id',
+        'user.slug',
+        'user.status',
+        'user.picture',
+        'user.firstName',
+        'user.lastName',
+        'agent.id',
+        'agent.slug',
+        'agent.status',
+        'agent.picture',
+        'agent.firstName',
+        'agent.lastName',
+        'bran.id',
+        'bran.name',
+        'bran.status',
+        'bran.picture',
+        'badr.city',
+        'badr.zip',
+        'badr.components',
       ])
       .getMany();
   }
