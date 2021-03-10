@@ -1,5 +1,5 @@
 import { MoreThanOrEqual, Repository } from 'typeorm';
-import { BadRequestException, Injectable, InternalServerErrorException, NotFoundException } from '@nestjs/common';
+import { BadRequestException, forwardRef, Inject, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { InjectStripe } from 'nestjs-stripe';
 import Stripe from 'stripe';
@@ -40,7 +40,9 @@ export class SubscriptionService {
     private readonly stripeClient: Stripe,
     @InjectRepository(Subscription)
     public subscriptionRepo: Repository<Subscription>,
+    @Inject(forwardRef(() => EmploymentService))
     private employmentService: EmploymentService,
+    @Inject(forwardRef(() => AuthService))
     private authService: AuthService,
   ) {}
 
@@ -68,8 +70,8 @@ export class SubscriptionService {
       this.authService.verifyPassword(authUserId, password),
     ]);
 
-    const plan = planId && subscriptionPlans.find((p) => p.id === planId)
-    const amount = Math.round((jobAmount || 0) * JOB_PRICE + (plan ? plan.price * plan.months : 0) * (1 + VAT) * 100);
+    const plan = planId && subscriptionPlans.find((p) => p.id === planId);
+    const amount = Math.round(((jobAmount || 0) * JOB_PRICE + (plan ? plan.price * plan.months : 0)) * (1 + VAT) * 100);
 
     let res = null;
     try {
@@ -124,6 +126,6 @@ export class SubscriptionService {
   public async findMySubscription(companyId: string, authUserId: string): Promise<Subscription[]> {
     await this.employmentService.verifyPermission(authUserId, companyId);
 
-    return this.subscriptionRepo.find({ where: { companyId } });
+    return this.subscriptionRepo.find({ where: { companyId }, order: { createdAt: 'DESC' } });
   }
 }

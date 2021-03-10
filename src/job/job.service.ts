@@ -130,14 +130,14 @@ export class JobService {
   public find(findJobsDto: FindJobsDto): Promise<{ items: Job[], total: number }> {
     const {
       companyId,
-      branchIds,
+      branchIds = [],
       order = 'publishAt',
       asc = false,
       skip = 0,
       take = 3,
       title,
-      sizes,
-      relationships,
+      sizes = [],
+      relationships = [],
       professionId,
       minWorkload,
       maxWorkload,
@@ -173,19 +173,19 @@ export class JobService {
       .orderBy(`job.${order}`, asc ? 'ASC' : 'DESC');
 
     if (companyId) {
-      qb.where('job.companyId = :companyId', { companyId });
+      qb.andWhere('job.companyId = :companyId', { companyId });
     }
 
-    if (branchIds) {
-      qb.where('job.companyId IN (:...branchIds)', { branchIds: decodeURIComponent(branchIds).split(',').filter(Boolean) });
+    if (branchIds?.length) {
+      qb.andWhere('job.companyId IN (:...branchIds)', { branchIds });
     }
 
     if (title) {
       qb.andWhere('LOWER(job.title) LIKE :title', { title: `%${title.toLowerCase()}%` });
     }
 
-    if (relationships) {
-      qb.andWhere('job.relationships IN (:...relationships)', { relationships: relationships.split(',').filter(Boolean).map((v) => +v) });
+    if (relationships?.length) {
+      qb.andWhere('job.relationships && :relationships', { relationships });
     }
 
     if (professionId) {
@@ -200,10 +200,10 @@ export class JobService {
       qb.andWhere('job.maxWorkload <= :maxWorkload', { maxWorkload });
     }
 
-    if (sizes) {
-      const where = sizes.split(',').map((size) => size.split('_')).map(([min, max]) => {
-        return `branch.size BETWEEN ${+min} AND ${+max}`
-      }).join(' OR ')
+    if (sizes?.length) {
+      const where = sizes.map(([min, max]) => {
+        return `branch.size BETWEEN ${min} AND ${max}`
+      }).join(' OR ');
 
       qb.andWhere(`(${where})`);
     }

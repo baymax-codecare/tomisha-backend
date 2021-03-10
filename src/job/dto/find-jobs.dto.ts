@@ -1,7 +1,7 @@
 import { PaginationDto } from 'src/shared/dto/pagination.dto';
-import { IsInt, IsOptional, MaxLength, IsString, Min, Max, IsNumber, IsUUID } from 'class-validator';
+import { IsInt, IsOptional, MaxLength, IsString, Min, Max, IsNumber, IsUUID, IsArray } from 'class-validator';
 import { Job } from '../job.entity';
-import { Type } from 'class-transformer';
+import { Transform, Type } from 'class-transformer';
 
 export class FindJobsDto extends PaginationDto<Job> {
   @IsUUID()
@@ -13,6 +13,7 @@ export class FindJobsDto extends PaginationDto<Job> {
   @IsOptional()
   public professionId?: number;
 
+  @Transform(t => t ? decodeURIComponent(t) : '')
   @IsString()
   @MaxLength(250)
   @IsOptional()
@@ -32,17 +33,20 @@ export class FindJobsDto extends PaginationDto<Job> {
   @IsOptional()
   public maxWorkload?: number;
 
-  @IsString()
+  @Transform(sizes => decodeURIComponent(sizes || '').split(',').map(s => s.split('_').map(n => +n)))
+  @IsArray()
   @IsOptional()
-  public sizes?: string;
+  public sizes?: [number, number][];
 
-  @IsString()
+  @Transform(rels => decodeURIComponent(rels || '').split(',').map(r => +r))
+  @IsArray()
   @IsOptional()
-  public relationships?: string;
+  public relationships?: number[];
 
-  @IsString()
+  @Transform(ids => decodeURIComponent(ids || '').split(','))
+  @IsArray()
   @IsOptional()
-  public branchIds?: string;
+  public branchIds?: string[];
 
   @IsString()
   @MaxLength(200)

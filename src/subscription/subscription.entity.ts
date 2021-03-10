@@ -35,7 +35,7 @@ export class Subscription extends EntityTimestamp {
   @Column('smallint', { nullable: true })
   public jobAmount: number;
 
-  @Column('float8')
+  @Column('float8', { nullable: true })
   public total: number;
 
   @Column('float8', { nullable: true })
@@ -45,7 +45,7 @@ export class Subscription extends EntityTimestamp {
   public vat: number;
 
   @Index()
-  @Column({ length: 500 })
+  @Column({ length: 500, nullable: true })
   public receipt: string;
 
   @Column('smallint', { nullable: true })

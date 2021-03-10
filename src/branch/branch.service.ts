@@ -9,6 +9,8 @@ import { EmploymentRole } from 'src/employment/type/employment-role.enum';
 import { Employment } from 'src/employment/employment.entity';
 import { EmploymentService } from 'src/employment/employment.service';
 import { EmploymentPermission } from 'src/employment/type/employment-permission.enum';
+import { SubscriptionService } from 'src/subscription/subscription.service';
+import * as dayjs from 'dayjs';
 
 @Injectable()
 export class BranchService {
@@ -18,6 +20,7 @@ export class BranchService {
     private companyService: CompanyService,
     @Inject(forwardRef(() => EmploymentService))
     private employmentService: EmploymentService,
+    private subscriptionService: SubscriptionService,
   ) {}
 
   public findMyHeadquaters(authUserId: string): Promise<Branch[]> {
@@ -99,6 +102,16 @@ export class BranchService {
       branch.companyId = company.id;
       branch.company = company;
       branch.isHeadquater = true;
+
+      // 3 free job ads for new company
+      this.subscriptionService.subscriptionRepo.insert({
+        companyId: company.id,
+        jobAmount: 1,
+        remainingJobs: 1,
+        total: 0,
+        startAt: dayjs().toDate(),
+        endAt: dayjs().add(1, 'year').toDate(),
+      });
 
       // Create default admin staff
       branch.staffs = [{

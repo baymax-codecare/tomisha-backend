@@ -1,4 +1,4 @@
-import { IsString, MaxLength, IsBoolean, IsArray, ArrayMinSize, ArrayUnique, IsDateString, IsObject, Max, Min, IsInt, IsUUID } from 'class-validator';
+import { IsString, MaxLength, IsBoolean, IsArray, ArrayMinSize, ArrayUnique, IsDateString, IsObject, Max, Min, IsInt, IsUUID, IsOptional } from 'class-validator';
 import { Tag } from 'src/tag/tag.entity';
 import { JobSkill } from '../job-skill.entity';
 import { JobRelationship } from '../type/job-relationship.enum';
@@ -52,7 +52,8 @@ export class CreateJobDto {
 
   @IsString()
   @MaxLength(250)
-  public cover: string;
+  @IsOptional()
+  public cover?: string;
 
   @IsString()
   @MaxLength(5000)
