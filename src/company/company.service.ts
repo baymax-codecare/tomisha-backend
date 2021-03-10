@@ -65,7 +65,7 @@ export class CompanyService {
   }
 
   public async getDetailById(companyId: string, authUserId: string): Promise<User> {
-    await this.employmentService.verifyPermission(authUserId, companyId, EmploymentPermission.CREATE_BRANCH);
+    await this.employmentService.verifyPermission(authUserId, companyId, EmploymentPermission.MUTATE_JOB);
 
     return this.userService.userRepo.createQueryBuilder('com')
       .leftJoinAndSelect('com.branches', 'bra')

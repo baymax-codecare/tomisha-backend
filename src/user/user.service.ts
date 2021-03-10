@@ -86,7 +86,7 @@ export class UserService {
       qb
         .leftJoinAndSelect('user.files', 'f')
         .leftJoinAndSelect('deg.files', 'ef')
-        .leftJoinAndSelect('oe.files', 'oef')
+        .leftJoinAndSelect('oce.files', 'oef')
         .leftJoinAndMapOne('user.address', 'user.addresses', 'ua')
         .leftJoin(
           Contact,
@@ -94,7 +94,7 @@ export class UserService {
           '((c.userId = user.id AND c.contactUserId = :authUserId) OR (c.userId = :authUserId AND c.contactUserId = user.id))',
           { authUserId },
         )
-        .andWhere('c.status != :blockedStatus', { blockedStatus: ContactStatus.BLOCKED })
+        // .andWhere('NOT EXISTS c.id OR c.status != :blockedStatus', { blockedStatus: ContactStatus.BLOCKED })
         .addSelect('c.status', 'contactStatus');
     }
 

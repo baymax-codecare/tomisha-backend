@@ -1,9 +1,9 @@
-import {  IsInt, IsNotEmpty, IsString, IsUUID, Max, MaxLength, Min } from 'class-validator';
+import {  IsInt, IsNotEmpty, IsString, Max, MaxLength, Min } from 'class-validator';
 
 export class CreateReferenceDto {
-  @IsUUID()
+  @IsInt()
   @IsNotEmpty()
-  public notificationId: string;
+  public notificationId: number;
 
   @IsString()
   @MaxLength(1000)

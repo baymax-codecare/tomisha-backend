@@ -1,5 +1,6 @@
 import { Controller, UseGuards, Get, Query, Req, Param } from '@nestjs/common';
 import { JwtAuthGuard } from 'src/auth/jwt.guard';
+import { PublicJwtAuthGuard } from 'src/auth/public-jwt.guard';
 import { UserService } from './user.service';
 import { User } from './user.entity';
 import { SearchUserDto, FindUsersDto, FindUserDto } from './dto';
@@ -23,6 +24,7 @@ export class UserController {
     return this.userService.searchOne(searchUserDto, req.user.id)
   }
 
+  @UseGuards(PublicJwtAuthGuard)
   @Get(':slug')
   public findOneBySlug (@Param('slug') slug: string, @Query() findUserDto: FindUserDto, @Req() req: Request): Promise<User> {
     return this.userService.findOne({ slug, occupationId: findUserDto.occupationId }, req.user?.id);

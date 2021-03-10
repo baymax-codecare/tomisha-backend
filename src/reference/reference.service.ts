@@ -1,11 +1,11 @@
 import { MailerService } from '@nestjs-modules/mailer';
-import { BadRequestException, ForbiddenException, forwardRef, Inject, Injectable } from '@nestjs/common';
+import { BadRequestException, forwardRef, Inject, Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { InjectRepository } from '@nestjs/typeorm';
 import { NotificationService } from 'src/notification/notification.service';
+import { NotificationStatus } from 'src/notification/type/notification-status.enum';
 import { NotificationType } from 'src/notification/type/notification-type.enum';
 import { UserService } from 'src/user/user.service';
-import { VerificationType } from 'src/verification/type/verification-type.enum';
 import { VerificationService } from 'src/verification/verification.service';
 import { Repository } from 'typeorm';
 import { CreateReferenceDto } from './dto';
@@ -59,16 +59,16 @@ export class ReferenceService {
       .createQueryBuilder('ref')
       .innerJoin('ref.user', 'user')
       .innerJoin('ref.refUser', 'refUser')
-      .innerJoinAndMapOne('refUser.address', 'refUser.addresses', 'address')
+      .leftJoinAndMapOne('refUser.address', 'refUser.addresses', 'address')
       .where('ref.userId = :userId', { userId })
       .andWhere((qb) => {
-        return `user.publicRef OR ref.userId = ${authUserId} OR EXISTS ` + qb.subQuery()
+        return `user.publicRef OR ref.userId = :authUserId OR EXISTS ` + qb.subQuery()
           .select('id')
           .from(ReferenceViewer, 'refViewer')
           .where('refViewer.userId = :userId', { userId })
           .andWhere('refViewer.viewerId = :authUserId', { authUserId })
           .getQuery();
-      })
+      }, { authUserId })
       .select([
         'ref.id',
         'ref.criterias',
@@ -86,7 +86,7 @@ export class ReferenceService {
         'address.text',
       ])
       .orderBy('ref.updatedAt', 'DESC')
-      .getRawMany();
+      .getMany();
   }
 
   public async inviteReference(userId: string, refUserId: string):  Promise<void> {
@@ -129,7 +129,7 @@ export class ReferenceService {
 
   public async create(createReferenceDto: CreateReferenceDto, authUserId: string): Promise<void> {
     const { user: refUser, fromUser: user } = await this.notificationService.notificationRepo.findOneOrFail({
-      where: { id: createReferenceDto.notificationId, userId: authUserId },
+      where: { id: createReferenceDto.notificationId, userId: authUserId, status: NotificationStatus.ACTIVE },
       relations: ['user', 'fromUser', 'user.addresses'],
     });
 
@@ -143,6 +143,8 @@ export class ReferenceService {
 
     await this.referenceRepo.save(reference);
 
+    this.notificationService.notificationRepo.update({ id: createReferenceDto.notificationId }, { status: NotificationStatus.YES })
+
     this.mailerService.sendMail({
       to: user.email,
       subject: 'Neue Referenz',
@@ -152,7 +154,7 @@ export class ReferenceService {
         senderPicture: refUser.picture || this.configService.get('defaultUserPicture'),
         senderName: refUser.firstName + ' ' + refUser.lastName,
         senderAddress: [refUser.addresses?.[0]?.zip, refUser.addresses?.[0]?.city].filter(Boolean).join(' '),
-        href: this.configService.get('webAppDomain') + 'network/reference',
+        href: this.configService.get('webAppDomain') + 'network/references',
       }
     })
   }
@@ -165,13 +167,12 @@ export class ReferenceService {
     const [user, viewer] = await Promise.all([
       this.userService.userRepo.findOne({
         where: { id: userId },
-        select: ['firstName', 'lastName'],
-        relations: ['occupation', 'user'],
+        select: ['id', 'firstName', 'lastName', 'email'],
       }),
 
       this.userService.userRepo.findOne({
         where: { id: authUserId },
-        select: ['firstName', 'lastName', 'picture'],
+        select: ['id', 'firstName', 'lastName', 'picture'],
         relations: ['addresses'],
       }),
     ]);
@@ -196,13 +197,25 @@ export class ReferenceService {
     });
   }
 
-  public async allowViewReferences (viewerId: string, authUserId: string) {
+  public async allowViewReferences(viewerId: string, authUserId: string) {
     if (await this.referenceViewerRepo.findOne({ where: { userId: authUserId, viewerId } })) {
       throw new BadRequestException('Already approved');
     }
 
     const newRecord = this.referenceViewerRepo.create({ userId: authUserId, viewerId });
     await this.referenceViewerRepo.save(newRecord);
+
+    this.notificationService.notificationRepo.update(
+      {
+        fromUserId: viewerId,
+        userId: authUserId,
+        type: NotificationType.REFERENCE_VIEW_REQUEST,
+        status: NotificationStatus.ACTIVE
+      },
+      {
+        status: NotificationStatus.YES,
+      },
+    )
   }
 
   public async canView({ userId, viewerId }: { userId: string, viewerId: string }): Promise<boolean> {
@@ -210,6 +223,6 @@ export class ReferenceService {
       return true;
     }
 
-    return !!(await this.referenceViewerRepo.findOne({ where: { userId, viewerId }, select: ['id'] }));
+    return !!(await this.referenceViewerRepo.count({ where: { userId, viewerId } }));
   }
 }
