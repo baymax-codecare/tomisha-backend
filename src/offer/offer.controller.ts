@@ -1,6 +1,6 @@
 import { Controller, Get, Req, Param, Post, Body, UseGuards, ParseIntPipe, Res, Query, ParseUUIDPipe } from '@nestjs/common';
 import { OfferService } from './offer.service';
-import { CreateOfferDto, CreateOfferLogDto, FindMyOffersDto, FindOffersDto } from './dto';
+import { CreateOfferDto, CreateOfferLogDto, FindMyOffersDto, FindOfferDto, FindOffersDto } from './dto';
 import { JwtAuthGuard } from 'src/auth/jwt.guard';
 import { Request, Response } from 'express';
 
@@ -20,8 +20,8 @@ export class OfferController {
   }
 
   @Get(':id')
-  public findOne(@Param('id', ParseIntPipe) id: number, @Req() req: Request, @Query('companyId', ParseUUIDPipe) companyId: string) {
-    return this.offerService.findOne(id, req.user.id, companyId);
+  public findOne(@Param('id', ParseIntPipe) id: number, @Req() req: Request, @Query() dto: FindOfferDto) {
+    return this.offerService.findOne(id, req.user.id, dto.companyId);
   }
 
   @Post()
@@ -30,8 +30,8 @@ export class OfferController {
   }
 
   @Post('log')
-  public async log(@Body() createAPplicationLogDto: CreateOfferLogDto, @Req() req: Request, @Res() res: Response) {
-    await this.offerService.createOfferLog(createAPplicationLogDto, req.user.id);
+  public async log(@Body() createOfferLogDto: CreateOfferLogDto, @Req() req: Request, @Res() res: Response) {
+    await this.offerService.createOfferLog(createOfferLogDto, req.user.id);
     res.sendStatus(200);
   }
 }

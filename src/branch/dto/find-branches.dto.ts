@@ -1,3 +1,4 @@
+import { Type } from 'class-transformer';
 import { IsUUID, IsString, Length, IsOptional, MaxLength, IsEnum } from 'class-validator';
 import { UserType } from 'src/user/type/user-type.enum';
 
@@ -21,6 +22,7 @@ export class FindBranchesDto {
   @IsOptional()
   public country?: String;
 
+  @Type(() => Number)
   @IsEnum(UserType)
   @IsOptional()
   public type?: UserType;

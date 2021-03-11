@@ -84,7 +84,7 @@ export class OfferService {
       .innerJoin('ap.occupation', 'oc')
       .innerJoin('oc.profession', 'prof')
       .innerJoin('of.user', 'user')
-      .innerJoin('of.job', 'job');
+      .leftJoin('of.job', 'job');
 
     if (companyId) {
       qb.where('(of.companyId = :companyId OR of.agencyId = :companyId)', { companyId });
@@ -95,7 +95,7 @@ export class OfferService {
     }
 
     if (status) {
-      qb.leftJoin('of.logs', 'log', 'log.action = :status', { status });
+      qb.innerJoin('of.logs', 'log', 'log.action = :status', { status });
     } else {
       qb.leftJoin('of.logs', 'log');
     }
@@ -108,6 +108,7 @@ export class OfferService {
         'of.companyId',
         'of.agencyId',
         'of.updatedAt',
+        'of.createdAt',
         'log',
         'prof.title',
         'ap.id',
@@ -137,9 +138,11 @@ export class OfferService {
     const qb = this.offerRepo
       .createQueryBuilder('of')
       .innerJoin('of.job', 'job')
+      .innerJoin('job.branch', 'jbran')
+      .leftJoinAndMapOne('jbran.address', 'jbran.addresses', 'jadd')
       .innerJoin('job.profession', 'prof')
-      .innerJoin('of.occupation', 'oc')
-      .innerJoin('of.logs', 'log')
+      .innerJoin('of.application', 'ap')
+      .innerJoin('of.user', 'user')
       .innerJoin('of.branch', 'bran')
       .leftJoinAndMapOne('bran.address', 'bran.addresses', 'badd')
       .innerJoin('of.staff', 'staf')
@@ -150,19 +153,30 @@ export class OfferService {
       .leftJoin('agent.user', 'asuser')
       .leftJoin('agent.profession', 'asprof')
       .leftJoin('agent.branch', 'asbran')
+      .leftJoin('of.logs', 'log')
       .select([
         'of.id',
         'of.message',
         'of.agentMessage',
         'of.startAt',
+        'of.createdAt',
+        'of.agencyId',
+        'of.companyId',
+        'of.userId',
         'job.id',
         'job.slug',
         'job.title',
         'prof.id',
         'prof.title',
+        'jbran.id',
+        'jbran.status',
+        'jbran.picture',
+        'jbran.name',
+        'jadd.zip',
+        'jadd.city',
         'log',
-        'oc.id',
-        'oc.slug',
+        'ap.id',
+        'ap.occupationId',
         'bran.id',
         'bran.slug',
         'bran.picture',
@@ -190,6 +204,12 @@ export class OfferService {
         'asprof.id',
         'asprof.title',
         'asbran.name',
+        'user.id',
+        'user.slug',
+        'user.status',
+        'user.picture',
+        'user.firstName',
+        'user.lastName',
       ])
       .where('of.id = :id', { id });
 
@@ -223,18 +243,19 @@ export class OfferService {
           id: createOfferdto.applicationId,
           companyId: createOfferdto.companyId
         },
-        select: ['jobId', 'userId']
+        select: ['id', 'jobId', 'userId']
       }),
 
       this.employmentService.verifyPermission(authUserId, createOfferdto.companyId),
 
-      this.jobLogService.jobLogRepo
-        .count({
-          action: Not(JobLogAction.DELETE),
-          applicationId: createOfferdto.applicationId,
-        })
-        .then((log) => {
-          if (log) {
+      this.offerRepo
+        .createQueryBuilder('of')
+        .leftJoin('of.logs', 'log')
+        .select(['of.id', 'log'])
+        .where('of.applicationId = :applicationId', { applicationId: createOfferdto.applicationId })
+        .getOne()
+        .then((of) => {
+          if (of && (!of.logs?.length || !of.logs?.some(log => log.action === JobLogAction.DELETE))) {
             throw new BadRequestException('Offer already exists');
           }
         }),
@@ -263,10 +284,9 @@ export class OfferService {
     const qb = this.offerRepo
       .createQueryBuilder('of')
       .leftJoin('of.logs', 'log', 'log.action >= :yesAction', { yesAction: JobLogAction.YES })
-      .leftJoin('of.agentEmployment', 'employment')
       .leftJoin('of.application', 'ap')
       .leftJoin('of.job', 'job')
-      .select(['of.id', 'of.companyId', 'of.userId', 'log.userId', 'ap.occupationId', 'job'])
+      .select(['of.id', 'of.companyId', 'of.agentId', 'of.userId', 'of.agencyId', 'log.userId', 'ap.occupationId', 'job'])
       .where('of.id IN (:...ids)', { ids });
 
     if (agencyId) {
@@ -283,8 +303,8 @@ export class OfferService {
     offers.forEach((offer) => {
       const valid = !offer.logs.some(log => log.action !== JobLogAction.YES || log.userId === authUserId)
       if (valid) {
-        const isFinished = !offer.agentId ||
-          isLogAccepted(offer.logs, authUserId === offer.userId ? offer.agentId : offer.userId);
+        const isFinished = !offer.agencyId ||
+          isLogAccepted(offer.logs, authUserId === offer.userId ? offer.userId : offer.agencyId);
         if (isFinished) {
           offer['isFinished'] = true;
         }
@@ -297,7 +317,7 @@ export class OfferService {
       return;
     }
 
-    this.offerRepo.update({ id: In(validOffers) }, { updatedAt: new Date() });
+    this.offerRepo.update({ id: In(validOffers.map(v => v.id)) }, { updatedAt: new Date() });
 
     const jobLogs = ids.map(offerId => ({ offerId, action, userId: companyId || agencyId || authUserId }));
 

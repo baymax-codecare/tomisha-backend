@@ -2,7 +2,7 @@ import { Type } from 'class-transformer';
 import { IsDate, IsInt, IsNotEmpty, IsOptional, IsString, IsUUID, MaxLength } from 'class-validator';
 
 export class CreateOfferDto {
-  @IsUUID()
+  @IsInt()
   @IsNotEmpty()
   public applicationId: number;
 
@@ -19,12 +19,12 @@ export class CreateOfferDto {
   public branchId: string;
 
   @IsUUID()
-  @IsNotEmpty()
-  public agentId: string;
+  @IsOptional()
+  public agentId?: string;
 
   @IsUUID()
-  @IsNotEmpty()
-  public agencyId: string;
+  @IsOptional()
+  public agencyId?: string;
 
   @Type(() => Date)
   @IsDate()
