@@ -45,6 +45,7 @@ export class ApplicationService {
         'ap.id',
         'ap.occupationId',
         'ap.updatedAt',
+        'ap.createdAt',
         'oc.id',
         'oc.slug',
         'prof.title',
@@ -85,7 +86,8 @@ export class ApplicationService {
           qb => 'NOT EXISTS ' + qb.subQuery()
             .select('joblog.id')
             .from(JobLog, 'joblog')
-            .where('joblog.action >= :yesAction', { yesAction: JobLogAction.YES })
+            .where('joblog.applicationId = ap.id')
+            .andWhere('joblog.action >= :yesAction', { yesAction: JobLogAction.YES })
             .getQuery()
         );
     }
@@ -94,6 +96,7 @@ export class ApplicationService {
       .select([
         'ap.id',
         'ap.updatedAt',
+        'ap.createdAt',
         'log',
         'prof.id',
         'prof.title',
@@ -182,11 +185,11 @@ export class ApplicationService {
 
       this.applicationRepo
         .createQueryBuilder('ap')
-        .innerJoinAndMapOne('ap.log', 'ap.logs', 'log', 'log.action != :deleteAction', { deleteAction: JobLogAction.DELETE })
-        .select(['ap.id', 'log.id'])
-        .getRawOne()
+        .leftJoin('ap.logs', 'log')
+        .select(['ap.id', 'log'])
+        .getOne()
         .then((ap) => {
-          if (ap) {
+          if (ap && (!ap.logs?.length || !ap.logs.some(log => log.action === JobLogAction.DELETE))) {
             throw new BadRequestException('Already applied')
           }
         }),
@@ -200,7 +203,7 @@ export class ApplicationService {
   }
 
   public async createApplicationLog(createApplicationLogDto: CreateApplicationLogDto, authUserId: string): Promise<void> {
-    const { action, applicationId, applicationIds, password } = createApplicationLogDto;
+    const { action, applicationId, applicationIds = [], password } = createApplicationLogDto;
     if (action === JobLogAction.NO) {
       await this.authService.verifyPassword(authUserId, password);
     }
@@ -210,7 +213,7 @@ export class ApplicationService {
 
     const qb = this.applicationRepo
       .createQueryBuilder('ap')
-      .leftJoinAndMapOne('ap.log', 'ap.logs', 'log', 'log.action >= :yesAction', { yesAction: JobLogAction.YES })
+      .leftJoin('ap.logs', 'log')
       .select(['ap.id', 'ap.companyId', 'ap.userId', 'log.id', 'log.action'])
       .where('ap.id IN (:...ids)', { ids });
 
@@ -218,23 +221,30 @@ export class ApplicationService {
       qb.andWhere('ap.userId = :authUserId', { authUserId });
     }
 
-    const application = await qb.getOne();
+    let companyId = null;
+    const applications = await qb.getMany()
+      .then((applications) => applications.filter((ap) => {
+        const valid = !ap.logs?.some?.(log => log.action === action || log.action >= JobLogAction.YES);
+        if (isUser) {
+          return valid;
+        } else if (!companyId) {
+          companyId = ap.companyId;
+        } else if (ap.companyId !== companyId) {
+          return false;
+        }
+        return valid;
+      }));
 
-    if (!application) {
-      throw new NotFoundException();
-    }
-
-    // Prevent changing status for applications that have logs of YES, NO or DELETE
-    if ('log' in application) {
-      throw new BadRequestException('Can not change application status');
+    if (!applications.length) {
+      throw new BadRequestException('Unable to change application status');
     }
 
     if (!isUser) {
-      await this.employmentService.verifyPermission(authUserId, application.companyId, EmploymentPermission.VIEW_APPLICATION);
+      await this.employmentService.verifyPermission(authUserId, companyId, EmploymentPermission.VIEW_APPLICATION);
     }
 
     this.applicationRepo.update({ id: In(ids) }, { updatedAt: new Date() });
 
-    await this.jobLogService.jobLogRepo.insert(ids.map(applicationId => ({ applicationId, action, userId: isUser ? authUserId : application.companyId })));
+    await this.jobLogService.jobLogRepo.insert(ids.map(applicationId => ({ applicationId, action, userId: isUser ? authUserId : companyId })));
   }
 }

@@ -123,6 +123,7 @@ export class JobService {
         'bran.picture',
         'addr',
       ])
+      .orderBy('job.updatedAt', 'DESC')
       .getManyAndCount()
       .then(([items, total]) => ({ items, total }));
   }

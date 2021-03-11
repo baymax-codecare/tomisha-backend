@@ -27,6 +27,6 @@ export class UserController {
   @UseGuards(PublicJwtAuthGuard)
   @Get(':slug')
   public findOneBySlug (@Param('slug') slug: string, @Query() findUserDto: FindUserDto, @Req() req: Request): Promise<User> {
-    return this.userService.findOne({ slug, occupationId: findUserDto.occupationId }, req.user?.id);
+    return this.userService.findOne({ slug, ...findUserDto }, req.user?.id);
   }
 }
