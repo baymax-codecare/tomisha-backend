@@ -60,6 +60,7 @@ export class ApplicationService {
         'log',
       ])
       .orderBy('ap.updatedAt', 'DESC')
+      .take(5)
       .getManyAndCount()
       .then(([items, total]) => ({ items, total }));
   }
@@ -76,7 +77,6 @@ export class ApplicationService {
       .innerJoin('ap.user', 'user')
       .where('ap.jobId = :jobId', { jobId })
       .andWhere('ap.companyId = :companyId', { companyId })
-      .andWhere('user.status NOT IN (:...userInactiveStatuses)', { userInactiveStatuses: [UserStatus.LOCKED, UserStatus.DEACTIVATED] })
 
     if (status) {
       qb.innerJoin('ap.logs', 'log', 'log.action = :status', { status });
@@ -129,10 +129,11 @@ export class ApplicationService {
       .leftJoinAndMapOne('bran.address', 'bran.addresses', 'baddr')
       .innerJoin('job.staff', 'staf')
       .innerJoin('staf.user', 'suser')
-      .leftJoin('staff.branch', 'sbran')
+      .leftJoin('staf.branch', 'sbran')
       .leftJoin('staf.profession', 'sprof')
       .select([
         'ap.id',
+        'ap.occupationId',
         'user.id',
         'user.slug',
         'user.status',
@@ -142,6 +143,7 @@ export class ApplicationService {
         'user.phone',
         'addr.city',
         'addr.zip',
+        'staf.id',
         'suser.id',
         'suser.slug',
         'suser.status',
@@ -189,7 +191,7 @@ export class ApplicationService {
         .select(['ap.id', 'log'])
         .getOne()
         .then((ap) => {
-          if (ap && (!ap.logs?.length || !ap.logs.some(log => log.action === JobLogAction.DELETE))) {
+          if (ap && (!ap.logs?.length || !ap.logs?.some(log => log.action === JobLogAction.DELETE))) {
             throw new BadRequestException('Already applied')
           }
         }),
@@ -243,7 +245,7 @@ export class ApplicationService {
       await this.employmentService.verifyPermission(authUserId, companyId, EmploymentPermission.VIEW_APPLICATION);
     }
 
-    this.applicationRepo.update({ id: In(ids) }, { updatedAt: new Date() });
+    this.applicationRepo.update({ id: In(applications.map(a => a.id)) }, { updatedAt: new Date() });
 
     await this.jobLogService.jobLogRepo.insert(ids.map(applicationId => ({ applicationId, action, userId: isUser ? authUserId : companyId })));
   }

@@ -75,16 +75,16 @@ export class InterviewService {
     }
 
     if (status) {
-      qb.leftJoin('in.logs', 'log', 'log.action = :status', { status });
+      qb.innerJoin('in.logs', 'log', 'log.action = :status', { status });
     } else {
       qb.leftJoin('in.logs', 'log');
     }
 
     return qb
-      .andWhere('user.status NOT IN (:...userInactiveStatuses)', { userInactiveStatuses: [UserStatus.LOCKED, UserStatus.DEACTIVATED] })
       .select([
         'in.id',
         'in.updatedAt',
+        'in.createdAt',
         'log',
         'prof.title',
         'ap.id',
@@ -113,27 +113,37 @@ export class InterviewService {
     const qb = this.interviewRepo
       .createQueryBuilder('in')
       .innerJoin('in.job', 'job')
+      .innerJoin('job.branch', 'jbran')
+      .leftJoinAndMapOne('jbran.address', 'jbran.addresses', 'jadd')
       .innerJoin('job.profession', 'prof')
-      .innerJoin('in.occupation', 'oc')
-      .innerJoin('in.logs', 'log')
+      .innerJoin('in.application', 'ap')
+      .innerJoin('in.user', 'user')
       .innerJoin('in.branch', 'bran')
       .leftJoinAndMapOne('bran.address', 'bran.addresses', 'badd')
       .innerJoin('in.staff', 'staf')
       .leftJoin('staf.user', 'suser')
       .leftJoin('staf.profession', 'sprof')
       .leftJoin('staf.branch', 'sbran')
+      .leftJoin('in.logs', 'log')
       .select([
         'in.id',
         'in.message',
         'in.startAt',
+        'in.createdAt',
         'job.id',
         'job.slug',
         'job.title',
         'prof.id',
         'prof.title',
+        'jbran.id',
+        'jbran.status',
+        'jbran.picture',
+        'jbran.name',
+        'jadd.zip',
+        'jadd.city',
         'log',
-        'oc.id',
-        'oc.slug',
+        'ap.id',
+        'ap.occupationId',
         'bran.id',
         'bran.slug',
         'bran.picture',
@@ -151,6 +161,12 @@ export class InterviewService {
         'sprof.id',
         'sprof.title',
         'sbran.name',
+        'user.id',
+        'user.slug',
+        'user.status',
+        'user.picture',
+        'user.firstName',
+        'user.lastName',
       ])
       .where('in.id = :id', { id });
 
@@ -176,19 +192,19 @@ export class InterviewService {
           id: createInterviewDto.applicationId,
           companyId: createInterviewDto.companyId
         },
-        select: ['jobId', 'userId']
+        select: ['id', 'jobId', 'userId']
       }),
 
       this.employmentService.verifyPermission(authUserId, createInterviewDto.companyId),
 
       this.interviewRepo
         .createQueryBuilder('in')
-        .innerJoinAndMapOne('in.log', 'in.logs', 'log', 'log.action != :deleteAction', { deleteAction: JobLogAction.DELETE })
-        .select(['in.id', 'log.id'])
+        .leftJoin('in.logs', 'log')
+        .select(['in.id', 'log'])
         .where('in.applicationId = :applicationId', { applicationId: createInterviewDto.applicationId })
-        .getRawOne()
-        .then((ap) => {
-          if (ap) {
+        .getOne()
+        .then((interview) => {
+          if (interview && (!interview.logs?.length || !interview.logs?.some(log => log.action === JobLogAction.DELETE))) {
             throw new BadRequestException('Interview already exists');
           }
         }),
@@ -220,24 +236,24 @@ export class InterviewService {
       qb.andWhere('in.userId = :authUserId', { authUserId });
     }
 
-    const interview = await qb.getOne();
+    const interviews = await qb.getMany()
+      .then((interviews) => interviews.filter((interview) => {
+        return !interview.logs?.some?.(log => log.action === action || log.action >= JobLogAction.YES);
+      }));
 
-    if (!interview) {
-      throw new NotFoundException();
-    }
-
-    // Prevent changing status for applications that have logs of YES, NO or DELETE
-    if ('log' in interview) {
-      throw new BadRequestException('Cannot change interview status');
+    if (!interviews.length) {
+      throw new BadRequestException('Unable to change interview status');
     }
 
     if (isCompany) {
-      await this.employmentService.verifyPermission(authUserId, interview.companyId, EmploymentPermission.VIEW_APPLICATION);
+      await Promise.all(Array.from(new Set(interviews.map(i => i.companyId))).map(
+        companyId => this.employmentService.verifyPermission(authUserId, companyId, EmploymentPermission.VIEW_APPLICATION)
+      ));
     }
 
-    this.interviewRepo.update({ id: In(ids) }, { updatedAt: new Date() });
+    this.interviewRepo.update({ id: In(interviews.map(i => i.id)) }, { updatedAt: new Date() });
 
-    const jobLogs = ids.map(interviewId => ({ interviewId, action, userId: isCompany ? interview.companyId : authUserId }));
+    const jobLogs = interviews.map(interview => ({ interviewId, action, userId: isCompany ? interview.companyId : authUserId }));
 
     await this.jobLogService.jobLogRepo.insert(jobLogs);
   }

@@ -1,6 +1,6 @@
-import { Controller, Get, Req, Param, Post, Body, UseGuards, ParseIntPipe, Res, Query, ParseUUIDPipe } from '@nestjs/common';
+import { Controller, Get, Req, Param, Post, Body, UseGuards, ParseIntPipe, Res, Query } from '@nestjs/common';
 import { InterviewService } from './interview.service';
-import { CreateInterviewDto, CreateInterviewLogDto, FindInterviewsDto } from './dto';
+import { CreateInterviewDto, CreateInterviewLogDto, FindInterviewDto, FindInterviewsDto } from './dto';
 import { JwtAuthGuard } from 'src/auth/jwt.guard';
 import { Request, Response } from 'express';
 
@@ -20,8 +20,8 @@ export class InterviewController {
   }
 
   @Get(':id')
-  public findOne(@Param('id', ParseIntPipe) id: number, @Req() req: Request, @Query('companyId', ParseUUIDPipe) companyId: string) {
-    return this.interviewService.findOne(id, req.user.id, companyId);
+  public findOne(@Param('id', ParseIntPipe) id: number, @Req() req: Request, @Query() findInterviewDto: FindInterviewDto) {
+    return this.interviewService.findOne(id, req.user.id, findInterviewDto.companyId);
   }
 
   @Post()
@@ -30,8 +30,8 @@ export class InterviewController {
   }
 
   @Post('log')
-  public async log(@Body() createAPplicationLogDto: CreateInterviewLogDto, @Req() req: Request, @Res() res: Response) {
-    await this.interviewService.createInterviewLog(createAPplicationLogDto, req.user.id);
+  public async log(@Body() createInterviewLogDto: CreateInterviewLogDto, @Req() req: Request, @Res() res: Response) {
+    await this.interviewService.createInterviewLog(createInterviewLogDto, req.user.id);
     res.sendStatus(200);
   }
 }
