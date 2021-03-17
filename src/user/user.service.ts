@@ -7,7 +7,6 @@ import { User } from './user.entity';
 import { DeactivateMeDto, SearchUserDto, FindUsersDto, PatchMeDto, FindUserDto } from './dto';
 import { UserStatus } from './type/user-status.enum';
 import { Contact } from 'src/contact/contact.entity';
-import { ContactStatus } from 'src/contact/type/contact-status.enum';
 import { AuthService } from 'src/auth/auth.service';
 import { ReferenceService } from 'src/reference/reference.service';
 import { UserType } from './type/user-type.enum';
@@ -144,8 +143,8 @@ export class UserService {
     .getOne();
   }
 
-  public getBriefMe(authUserId: string): Promise<User> {
-    return this.userRepo.createQueryBuilder('user')
+  public async getBriefMe(authUserId: string): Promise<User> {
+    const me = await this.userRepo.createQueryBuilder('user')
       .leftJoinAndMapOne('user.address', 'user.addresses', 'addr')
       .leftJoin('user.employments' ,'employment', 'employment.role != :employeeRole', { employeeRole: EmploymentRole.EMPLOYEE })
       .leftJoin('employment.company', 'company', 'company.status = :activeStatus', { activeStatus: UserStatus.AVAILABLE_ACTIVELY })
@@ -191,6 +190,12 @@ export class UserService {
         'sub.endAt',
       ])
       .getOne();
+
+    if (!me) {
+      throw new NotFoundException();
+    }
+
+    return me;
   }
 
   public search(findUsersDto: FindUsersDto, authUserId: string): Promise<{ items: User[], total: number }> {

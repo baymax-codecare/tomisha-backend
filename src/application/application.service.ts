@@ -187,11 +187,21 @@ export class ApplicationService {
 
       this.applicationRepo
         .createQueryBuilder('ap')
-        .leftJoin('ap.logs', 'log')
-        .select(['ap.id', 'log'])
-        .getOne()
+        .where('ap.userId = :authUserId', { authUserId })
+        .andWhere('ap.jobId = :jobId', { jobId: createApplicationDto.jobId })
+        .andWhere(
+          qb => 'NOT EXISTS ' + qb
+            .subQuery()
+            .select('jlog.id')
+            .from(JobLog, 'jlog')
+            .where('jlog.applicationId = ap.id')
+            .andWhere('jlog.action >= :yesAction', { yesAction: JobLogAction.YES })
+            .getQuery()
+        )
+        .select('ap.id')
+        .getRawOne()
         .then((ap) => {
-          if (ap && (!ap.logs?.length || !ap.logs?.some(log => log.action === JobLogAction.DELETE))) {
+          if (ap) {
             throw new BadRequestException('Already applied')
           }
         }),

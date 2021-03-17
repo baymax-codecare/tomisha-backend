@@ -21,7 +21,7 @@ export class OfferController {
 
   @Get(':id')
   public findOne(@Param('id', ParseIntPipe) id: number, @Req() req: Request, @Query() dto: FindOfferDto) {
-    return this.offerService.findOne(id, req.user.id, dto.companyId);
+    return this.offerService.findOne(id, req.user.id, dto.companyId, dto.agencyId);
   }
 
   @Post()

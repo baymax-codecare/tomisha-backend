@@ -18,7 +18,7 @@ export class CreateOfferDto {
   @IsNotEmpty()
   public branchId: string;
 
-  @IsUUID()
+  @IsInt()
   @IsOptional()
   public agentId?: string;
 

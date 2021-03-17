@@ -74,6 +74,7 @@ export class CompanyService {
       .leftJoinAndSelect('sta.profession', 'spr')
       .leftJoinAndSelect('sta.user', 'sus')
       .leftJoinAndMapOne('sus.address', 'sus.addresses', 'sad')
+      .where('com.id = :companyId', { companyId })
       .getOne();
   }
 

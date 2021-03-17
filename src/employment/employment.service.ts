@@ -71,7 +71,8 @@ export class EmploymentService {
   }
 
   public async findAgencyCandidates(agencyId: string, authUserId: string): Promise<Employment[]> {
-    await this.verifyPermission(agencyId, authUserId);
+    await this.verifyPermission(authUserId, agencyId);
+
     return this.employmentRepo
       .createQueryBuilder('em')
       .leftJoin('em.profession', 'prof')

@@ -26,10 +26,6 @@ export class OfferService {
   ) {}
 
   public async findMyOffers(authUserId: string, agencyId?: string): Promise<{ items: Offer[], total: number }> {
-    if (agencyId) {
-      await this.employmentService.verifyPermission(authUserId, agencyId);
-    }
-
     const qb = this.offerRepo
       .createQueryBuilder('of')
       .innerJoin('of.job', 'job')
@@ -39,7 +35,8 @@ export class OfferService {
 
     if (agencyId) {
       qb
-        .where('of.agentId = :authUserId', { authUserId })
+        .innerJoin('of.agent', 'agent')
+        .where('agent.userId = :authUserId', { authUserId })
         .andWhere('of.agencyId = :agencyId', { agencyId });
     } else {
       qb.where('of.userId = :authUserId', { authUserId });
@@ -52,6 +49,7 @@ export class OfferService {
           .from(JobLog, 'log')
           .where('log.offerId = of.id')
           .andWhere('log.action >= :yesAction', { yesAction: JobLogAction.YES })
+          .andWhere('(log.userId = :userId OR log.userId = of.companyId)', { userId: agencyId || authUserId })
           .getQuery()
       )
       .select([
@@ -87,7 +85,7 @@ export class OfferService {
       .leftJoin('of.job', 'job');
 
     if (companyId) {
-      qb.where('(of.companyId = :companyId OR of.agencyId = :companyId)', { companyId });
+      qb.where('(of.companyId = :companyId)', { companyId });
     }
 
     if (jobId) {
@@ -130,7 +128,7 @@ export class OfferService {
   }
 
   public async findOne(id: number, authUserId: string, companyId?: string, agencyId?: string): Promise<Offer> {
-    const cId = companyId || agencyId
+    const cId = companyId || agencyId;
     if (cId) {
       await this.employmentService.verifyPermission(authUserId, cId, EmploymentPermission.VIEW_APPLICATION);
     }
@@ -227,9 +225,9 @@ export class OfferService {
       throw new NotFoundException();
     }
 
-    if (!companyId && offer.userId !== authUserId) {
+    if (agencyId) {
       delete offer.message;
-    } else {
+    } else if (!companyId) {
       delete offer.agentMessage;
     }
 
@@ -250,13 +248,21 @@ export class OfferService {
 
       this.offerRepo
         .createQueryBuilder('of')
-        .leftJoin('of.logs', 'log')
-        .select(['of.id', 'log'])
+        .select('of.id')
         .where('of.applicationId = :applicationId', { applicationId: createOfferdto.applicationId })
-        .getOne()
+        .andWhere(
+          qb => 'NOT EXISTS ' + qb
+            .subQuery()
+            .select('jlog.id')
+            .from(JobLog, 'jlog')
+            .where('jlog.offerId = of.id')
+            .andWhere('jlog.action >= :yesAction', { yesAction: JobLogAction.YES })
+            .getQuery()
+        )
+        .getRawOne()
         .then((of) => {
-          if (of && (!of.logs?.length || !of.logs?.some(log => log.action === JobLogAction.DELETE))) {
-            throw new BadRequestException('Offer already exists');
+          if (of) {
+            throw new BadRequestException('Already offered');
           }
         }),
     ]);
@@ -286,7 +292,7 @@ export class OfferService {
       .leftJoin('of.logs', 'log', 'log.action >= :yesAction', { yesAction: JobLogAction.YES })
       .leftJoin('of.application', 'ap')
       .leftJoin('of.job', 'job')
-      .select(['of.id', 'of.companyId', 'of.agentId', 'of.userId', 'of.agencyId', 'log.userId', 'ap.occupationId', 'job'])
+      .select(['of.id', 'of.companyId', 'of.agentId', 'of.userId', 'of.agencyId', 'log.userId', 'log.action', 'ap.occupationId', 'job'])
       .where('of.id IN (:...ids)', { ids });
 
     if (agencyId) {
@@ -301,13 +307,13 @@ export class OfferService {
 
     const validOffers = []
     offers.forEach((offer) => {
-      const valid = !offer.logs.some(log => log.action !== JobLogAction.YES || log.userId === authUserId)
+      const valid = !offer.logs.some(log =>
+        (log.action === action && log.userId === (companyId || agencyId || authUserId)) ||
+        (log.action >= JobLogAction.YES && (log.userId === (agencyId || authUserId) || companyId))
+      );
+
       if (valid) {
-        const isFinished = !offer.agencyId ||
-          isLogAccepted(offer.logs, authUserId === offer.userId ? offer.userId : offer.agencyId);
-        if (isFinished) {
-          offer['isFinished'] = true;
-        }
+        offer.logs.push({ action, userId: companyId || agencyId || authUserId } as JobLog)
 
         validOffers.push(offer)
       }
@@ -323,9 +329,15 @@ export class OfferService {
 
     await this.jobLogService.jobLogRepo.insert(jobLogs);
 
+    const newEmployments = [];
+    const userIds = [];
+
     validOffers.forEach((offer) => {
-      if (offer['isFinished']) {
-        this.employmentService.employmentRepo.insert(Object.assign({
+      const isFinished = offer.logs.find(log => log.action === JobLogAction.YES && log.userId === offer.userId) &&
+          (!offer.agencyId || offer.logs.find(log => log.action === JobLogAction.YES && log.userId === offer.agencyId))
+
+      if (isFinished) {
+        newEmployments.push(Object.assign({
           userId: offer.userId,
           occupationId: offer.application.occupationId,
           branchId: offer.job.branchId,
@@ -339,9 +351,14 @@ export class OfferService {
           startedAt: offer.startAt,
         }, offer.agencyId ? { agencyId: offer.agencyId, agentId: offer.agentId }: { companyId: offer.companyId }));
 
-        this.userService.userRepo.update({ id: offer.userId }, { status: UserStatus.UNAVAILABLE })
+        userIds.push(offer.userId);
       }
     });
+
+    if (newEmployments.length) {
+      this.employmentService.employmentRepo.insert(newEmployments);
+      this.userService.userRepo.update({ id: In(Array.from(new Set(userIds))) }, { status: UserStatus.UNAVAILABLE });
+    }
   }
 }
 

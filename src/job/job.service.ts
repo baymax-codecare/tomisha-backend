@@ -178,7 +178,7 @@ export class JobService {
     }
 
     if (branchIds?.length) {
-      qb.andWhere('job.companyId IN (:...branchIds)', { branchIds });
+      qb.andWhere('job.branchId IN (:...branchIds)', { branchIds });
     }
 
     if (title) {

@@ -199,12 +199,20 @@ export class InterviewService {
 
       this.interviewRepo
         .createQueryBuilder('in')
-        .leftJoin('in.logs', 'log')
-        .select(['in.id', 'log'])
+        .select('in.id')
         .where('in.applicationId = :applicationId', { applicationId: createInterviewDto.applicationId })
-        .getOne()
+        .andWhere(
+          qb => 'NOT EXISTS ' + qb
+            .subQuery()
+            .select('jlog.id')
+            .from(JobLog, 'jlog')
+            .where('jlog.interviewId = in.id')
+            .andWhere('jlog.action >= :yesAction', { yesAction: JobLogAction.YES })
+            .getQuery()
+        )
+        .getRawOne()
         .then((interview) => {
-          if (interview && (!interview.logs?.length || !interview.logs?.some(log => log.action === JobLogAction.DELETE))) {
+          if (interview) {
             throw new BadRequestException('Interview already exists');
           }
         }),
