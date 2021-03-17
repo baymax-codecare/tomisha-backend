@@ -1,7 +1,7 @@
 import {MigrationInterface, QueryRunner} from "typeorm";
 
-export class CreateTables1615306489499 implements MigrationInterface {
-    name = 'CreateTables1615306489499'
+export class CreateTables1615949609927 implements MigrationInterface {
+    name = 'CreateTables1615949609927'
 
     public async up(queryRunner: QueryRunner): Promise<void> {
         await queryRunner.query(`CREATE TABLE "user-documents" ("id" SERIAL NOT NULL, "userId" uuid, "branchId" uuid, "group" smallint, "type" smallint, "front" character varying(250), "back" character varying(250), "issuedAt" date, CONSTRAINT "PK_36f76469066a56e4f4d53596a7f" PRIMARY KEY ("id"))`);
@@ -22,7 +22,7 @@ export class CreateTables1615306489499 implements MigrationInterface {
         await queryRunner.query(`CREATE INDEX "IDX_730c434f9749a59f847484d78b" ON "references" ("userId") `);
         await queryRunner.query(`CREATE INDEX "IDX_e5d86b587ab596bfd8490ae70b" ON "references" ("refUserId") `);
         await queryRunner.query(`CREATE TABLE "soft-skills" ("id" SERIAL NOT NULL, "skillId" smallint NOT NULL, "level" smallint NOT NULL, "description" character varying(500), "jobId" uuid, "userId" uuid, CONSTRAINT "PK_f8a0c53057f15a4f779c5205627" PRIMARY KEY ("id"))`);
-        await queryRunner.query(`CREATE TABLE "subscriptions" ("createdAt" TIMESTAMP NOT NULL DEFAULT now(), "updatedAt" TIMESTAMP NOT NULL DEFAULT now(), "id" SERIAL NOT NULL, "companyId" uuid NOT NULL, "staffId" integer NOT NULL, "planId" character varying(250), "startAt" date NOT NULL, "endAt" date NOT NULL, "branchAmount" smallint, "staffAmount" smallint, "jobAmount" smallint, "total" double precision NOT NULL, "discount" double precision, "vat" double precision, "receipt" character varying(500) NOT NULL, "remainingJobs" smallint, CONSTRAINT "PK_a87248d73155605cf782be9ee5e" PRIMARY KEY ("id"))`);
+        await queryRunner.query(`CREATE TABLE "subscriptions" ("createdAt" TIMESTAMP NOT NULL DEFAULT now(), "updatedAt" TIMESTAMP NOT NULL DEFAULT now(), "id" SERIAL NOT NULL, "companyId" uuid NOT NULL, "staffId" integer, "planId" character varying(250), "startAt" date NOT NULL, "endAt" date NOT NULL, "branchAmount" smallint, "staffAmount" smallint, "jobAmount" smallint, "total" double precision, "discount" double precision, "vat" double precision, "receipt" character varying(500), "remainingJobs" smallint, CONSTRAINT "PK_a87248d73155605cf782be9ee5e" PRIMARY KEY ("id"))`);
         await queryRunner.query(`CREATE INDEX "IDX_ea19a7bd47edc90d4f1f6f6f31" ON "subscriptions" ("companyId") `);
         await queryRunner.query(`CREATE INDEX "IDX_d0a8ce4b981c05b38ccad30216" ON "subscriptions" ("staffId") `);
         await queryRunner.query(`CREATE INDEX "IDX_7536cba909dd7584a4640cad7d" ON "subscriptions" ("planId") `);

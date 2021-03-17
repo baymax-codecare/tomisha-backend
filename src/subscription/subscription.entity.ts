@@ -13,7 +13,7 @@ export class Subscription extends EntityTimestamp {
   public companyId: string;
 
   @Index()
-  @Column()
+  @Column({ nullable: true })
   public staffId: number;
 
   @Index()

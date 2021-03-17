@@ -24,8 +24,8 @@ export class Employment {
   public agencyId: string;
 
   @Index()
-  @Column('uuid', { nullable: true })
-  public agentId: string;
+  @Column({ nullable: true })
+  public agentId: number;
 
   @Index()
   @Column('uuid', { nullable: true })
