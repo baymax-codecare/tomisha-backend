@@ -103,15 +103,25 @@ export class BranchService {
       branch.company = company;
       branch.isHeadquater = true;
 
-      // 3 free job ads for new company
-      this.subscriptionService.subscriptionRepo.insert({
-        companyId: company.id,
-        jobAmount: 1,
-        remainingJobs: 1,
-        total: 0,
-        startAt: dayjs().toDate(),
-        endAt: dayjs().add(1, 'year').toDate(),
-      });
+      // 1 free month and 3 free job ads for new company
+      const startAt = dayjs().toDate()
+      this.subscriptionService.subscriptionRepo.insert([
+        {
+          companyId: company.id,
+          jobAmount: 1,
+          remainingJobs: 1,
+          total: 0,
+          startAt,
+          endAt: dayjs().add(1, 'year').toDate(),
+        },
+        {
+          companyId: company.id,
+          planId: 'trial',
+          total: 0,
+          startAt,
+          endAt: dayjs().add(1, 'month').toDate(),
+        },
+      ]);
 
       // Create default admin staff
       branch.staffs = [{
