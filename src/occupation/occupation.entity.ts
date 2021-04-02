@@ -22,6 +22,9 @@ export class Occupation extends EntityTimestamp {
   @Column()
   public slug: string;
 
+  @Column('smallint', { default: 0, nullable: true })
+  public level: number;
+
   @Column('smallint', { default: 0 })
   public minWorkload: number;
 

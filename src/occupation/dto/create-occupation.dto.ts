@@ -20,6 +20,12 @@ export class CreateOccupationDto {
   @Min(0)
   @Max(100)
   @IsOptional()
+  public level?: number;
+
+  @IsInt()
+  @Min(0)
+  @Max(100)
+  @IsOptional()
   public minWorkload?: number;
 
   @IsInt()
