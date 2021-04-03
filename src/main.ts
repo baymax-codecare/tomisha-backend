@@ -4,7 +4,6 @@ import { NestExpressApplication } from '@nestjs/platform-express';
 import { ValidationPipe, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import * as helmet from 'helmet';
-import * as rateLimit from 'express-rate-limit';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 
 async function bootstrap() {
@@ -34,12 +33,6 @@ async function bootstrap() {
 
   // Enchance header response security
   app.use(helmet());
-
-  // Rate limit 100 requests per windowMs in 10 minutes
-  app.use('/', rateLimit({
-    windowMs: 60 * 1000,
-    max: 100,
-  }));
 
   // For reverse proxy
   app.set('trust proxy', 1);

@@ -1,4 +1,5 @@
-import { APP_INTERCEPTOR, APP_FILTER, APP_PIPE } from '@nestjs/core';
+import { APP_INTERCEPTOR, APP_FILTER, APP_PIPE, APP_GUARD } from '@nestjs/core';
+import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { ServeStaticModule } from '@nestjs/serve-static';
 import { MailerModule } from '@nestjs-modules/mailer';
@@ -55,6 +56,16 @@ import { EmploymentModule } from './employment/employment.module';
           },
         ]
       }
+    }),
+
+    ThrottlerModule.forRoot({
+      ttl: 60,
+      limit: 10,
+      ignoreUserAgents: [
+        /googlebot/gi,
+        /bingbot/gi,
+        /DuckDuckGo/gi,
+      ],
     }),
 
     TypeOrmModule.forRootAsync({
@@ -128,6 +139,10 @@ import { EmploymentModule } from './employment/employment.module';
       provide: APP_INTERCEPTOR,
       useClass: LoggingInterceptor,
     }]),
+    {
+      provide: APP_GUARD,
+      useClass: ThrottlerGuard,
+    },
     {
       provide: APP_FILTER,
       useClass: AllExceptionFilter,

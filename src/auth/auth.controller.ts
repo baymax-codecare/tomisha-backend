@@ -1,9 +1,10 @@
 import { Controller, Post, UseGuards, Res, Body, Get, Req } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
+import { Throttle } from '@nestjs/throttler';
+import { Request, Response } from 'express';
 import { AuthService } from './auth.service';
 import { JwtAuthGuard } from './jwt.guard';
 import { ChangePasswordDto, ForgotPasswordDto, ResetPasswordDto, RegisterDto, VerifyEmailDto } from './dto';
-import { Request, Response } from 'express';
 
 @Controller('auth')
 export class AuthController {
@@ -27,6 +28,7 @@ export class AuthController {
     return this.authService.login(req.user);
   }
 
+  @Throttle(1, 29)
   @Post('register')
   async register(@Body() registerDto: RegisterDto) {
     const user = await this.authService.registerLocal(registerDto);
