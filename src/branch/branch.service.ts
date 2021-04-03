@@ -29,7 +29,7 @@ export class BranchService {
       .innerJoin('branch.addresses', 'address')
       .where('branch.isHeadquater')
       .andWhere('staff.userId = :userId', { userId: authUserId })
-      .andWhere('staff.role IS NOT :employeeRole', { employeeRole: EmploymentRole.EMPLOYEE })
+      .andWhere('staff.role != :employeeRole', { employeeRole: EmploymentRole.EMPLOYEE })
       .select(['branch', 'address'])
       .getMany();
   }

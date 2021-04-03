@@ -140,7 +140,7 @@ export class ContactService {
   public async acceptInvitation (id: number, authUserId: string): Promise<void> {
     const contact = await this.contactRepo.createQueryBuilder('contact')
       .where('contact.id = :id', { id })
-      .andWhere('contact.status IS NOT :activeStatus', { activeStatus: ContactStatus.ACTIVE })
+      .andWhere('contact.status != :activeStatus', { activeStatus: ContactStatus.ACTIVE })
       .andWhere('(contact.userId = :userId OR contact.contactUserId = :userId)', { userId: authUserId })
       .select('contact')
       .getOne();

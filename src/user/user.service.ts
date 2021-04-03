@@ -224,7 +224,7 @@ export class UserService {
       qb.andWhere('LOWER(user.lastName) LIKE :lastName', { lastName: `%${lastName.toLowerCase()}%` });
     }
 
-    if (friend) {
+    if (friend !== undefined) {
       qb.andWhere(
         qb => `${friend ? '' : 'NOT '}EXISTS` + qb.subQuery()
           .select('c.id')
