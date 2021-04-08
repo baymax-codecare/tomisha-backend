@@ -4,7 +4,7 @@ import { Throttle } from '@nestjs/throttler';
 import { Request, Response } from 'express';
 import { AuthService } from './auth.service';
 import { JwtAuthGuard } from './jwt.guard';
-import { ChangePasswordDto, ForgotPasswordDto, ResetPasswordDto, RegisterDto, VerifyEmailDto } from './dto';
+import { ChangePasswordDto, ForgotPasswordDto, ResetPasswordDto, RegisterDto, VerifyEmailDto, RequestNewEmailDto } from './dto';
 
 @Controller('auth')
 export class AuthController {
@@ -71,7 +71,7 @@ export class AuthController {
   @UseGuards(JwtAuthGuard)
   @Post('password/change')
   public async changePassword(@Req() req: Request, @Res() res: Response, @Body() changePasswordDto: ChangePasswordDto) {
-    await this.authService.changePassword(req.user, changePasswordDto);
+    await this.authService.changePassword(changePasswordDto, req.user.id);
     res.sendStatus(200);
   }
 
@@ -84,6 +84,19 @@ export class AuthController {
   @Post('password/reset')
   public async resetPassword(@Body() resetPasswordDto: ResetPasswordDto, @Res() res: Response) {
     await this.authService.resetPassword(resetPasswordDto);
+    res.sendStatus(200);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Post('email/new')
+  public async requestNewEmail(@Req() req: Request, @Res() res: Response, @Body() newEmailDto: RequestNewEmailDto) {
+    await this.authService.requestNewEmail(newEmailDto, req.user.id);
+    res.sendStatus(200);
+  }
+
+  @Post('email/change')
+  public async changeEmail(@Res() res: Response, @Body('token') token: string) {
+    await this.authService.changeEmail(token);
     res.sendStatus(200);
   }
 }

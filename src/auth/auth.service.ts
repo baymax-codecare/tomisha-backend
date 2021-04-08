@@ -7,7 +7,7 @@ import fetch from 'node-fetch';
 import { UserService } from '../user/user.service';
 import { compareHash, hash } from '../shared/utils';
 import { AuthUser } from './type/auth-user.interface';
-import { ChangePasswordDto, ForgotPasswordDto, ResetPasswordDto, VerifyEmailDto, RegisterDto } from './dto';
+import { ChangePasswordDto, ForgotPasswordDto, ResetPasswordDto, VerifyEmailDto, RegisterDto, RequestNewEmailDto } from './dto';
 import { VerificationService } from 'src/verification/verification.service';
 import { NotificationService } from 'src/notification/notification.service';
 import { NotificationType } from 'src/notification/type/notification-type.enum';
@@ -104,13 +104,13 @@ export class AuthService {
     return this.configService.get('webAppDomain') + `token?type=${VerificationType.AUTH_LOGIN}&token=${token}`;
   }
 
-  public generateCreateAccountUrl(data: any, direct: boolean = false): Promise<string> {
+  public generateCreateAccountUrl(data: any, skipVerification: boolean = false): Promise<string> {
     return this.verificationService.createTokenUrl({
       type: VerificationType.AUTH_REGISTER,
       id: data.email,
       data,
       expiresIn: VERIFY_EMAIL_EXP_SEC,
-      direct,
+      skipVerification,
     })
   }
 
@@ -148,8 +148,8 @@ export class AuthService {
   //   return existedUser || this.userService.create(user);
   // }
 
-  public async changePassword(user: AuthUser, changePasswordDto: ChangePasswordDto) {
-    const me = await this.userService.userRepo.findOne({ where: { id: user.id }, select: ['id', 'password'] });
+  public async changePassword(changePasswordDto: ChangePasswordDto, authUserId: string) {
+    const me = await this.userService.userRepo.findOne({ where: { id: authUserId }, select: ['id', 'password'] });
 
     if (me && compareHash(me.password, changePasswordDto.oldPassword)) {
       return this.userService.update(me.id, { password: hash(changePasswordDto.newPassword) });
@@ -194,5 +194,42 @@ export class AuthService {
     await this.userService.update(receiverId, {
       password: hash(newPassword),
     });
+  }
+
+  public async requestNewEmail(newEmailDto: RequestNewEmailDto, authUserId: string): Promise<void> {
+    await this.verifyPassword(authUserId, newEmailDto.password);
+
+    if (await this.userService.userRepo.findOne({
+      where: { email: newEmailDto.email },
+      select: ['id'],
+    })) {
+      throw new BadRequestException('Email is already in use');
+    }
+
+
+    const { email, firstName, lastName } = await this.userService.userRepo.findOne({ where: { id: authUserId }, select: ['email', 'firstName', 'lastName'] });
+
+    await this.mailerService.sendMail({
+      to: email,
+      subject: 'Bitte bestätige deine E-Mail-Adresse',
+      template: 'verify-email',
+      context: {
+        receiverName: firstName + ' ' + lastName,
+        expHours: Math.round(VERIFY_EMAIL_EXP_SEC / 3600),
+        href: await this.verificationService.createTokenUrl({
+          type: VerificationType.CHANGE_EMAIL,
+          id: newEmailDto.email,
+          receiverId: authUserId,
+          data: { email },
+          expiresIn: VERIFY_EMAIL_EXP_SEC,
+        }),
+      },
+    })
+  }
+
+  public async changeEmail(token: string): Promise<void> {
+    const { data, receiverId } = await this.verificationService.validateToken(token);
+
+    await this.userService.userRepo.update({ id: receiverId }, { email: data.email });
   }
 }
