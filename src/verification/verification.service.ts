@@ -29,7 +29,7 @@ export class VerificationService {
   ) {}
 
   private webAppHandlerRoute = this.configService.get('webAppDomain') + 'token';
-  private verificationRoute = this.configService.get('domain') + 'verification/reskipVerification?token='
+  private verificationRoute = this.configService.get('domain') + 'verification/redirect?token='
 
   // Create new token url and invalidate all old tokens that are associated with a unique key
   public async createTokenUrl(payload: TokenPayload): Promise<string> {
