@@ -14,6 +14,7 @@ import { NotificationType } from 'src/notification/type/notification-type.enum';
 import { VerificationType } from 'src/verification/type/verification-type.enum';
 import { LessThanOrEqual } from 'typeorm';
 import { UserType } from 'src/user/type/user-type.enum';
+import { UserStatus } from 'src/user/type/user-status.enum';
 
 const FORGOT_PW_EXP_SEC = 24 * 60 * 60; // 1d
 const VERIFY_EMAIL_EXP_SEC = 24 * 60 * 60; // 1d
@@ -33,7 +34,7 @@ export class AuthService {
   public async validateUser(email: string, pass: string): Promise<AuthUser> {
     const user = await this.userService.userRepo.findOne({
       where: { email: email?.toLowerCase?.().trim(), type: LessThanOrEqual(UserType.AGENT) },
-      select: ['id', 'email', 'password', 'type', 'firstName', 'lastName', 'picture', 'progress'],
+      select: ['id', 'email', 'password', 'type', 'firstName', 'lastName', 'picture', 'progress', 'status'],
     });
     if (user?.password && compareHash(pass, user.password)) {
       delete user.password;
@@ -44,6 +45,11 @@ export class AuthService {
   }
 
   public async login(user: any) {
+    if (user.status === UserStatus.DEACTIVATED) {
+      user.status = UserStatus.AVAILABLE_PRIVATELY;
+      this.userService.userRepo.update({ id: user.id }, { status: user.status });
+    }
+
     return {
       user,
       accessToken: this.jwtService.sign({

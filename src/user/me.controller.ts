@@ -1,7 +1,7 @@
-import { Controller, Patch, UseGuards, Body, Req, Get } from '@nestjs/common';
-import { Request } from 'express';
+import { Controller, Patch, UseGuards, Body, Req, Get, Post, Res } from '@nestjs/common';
+import { Request, Response } from 'express';
 
-import { PatchMeDto } from './dto';
+import { DeactivateMeDto, PatchMeDto } from './dto';
 import { UserService } from './user.service';
 import { User } from './user.entity';
 
@@ -11,6 +11,12 @@ import { JwtAuthGuard } from 'src/auth/jwt.guard';
 @Controller('me')
 export class MeController {
   constructor(private userService: UserService) {}
+
+  @Post('deactivate')
+  public async deactivateMe(@Body() deactivateMeDto: DeactivateMeDto, @Req() req: Request, @Res() res: Response): Promise<void> {
+    await this.userService.deactivateMe(deactivateMeDto, req.user.id);
+    res.sendStatus(200);
+  }
 
   @Patch()
   public patchPersonalInfo(@Body() patchMeDto: PatchMeDto, @Req() req: Request): Promise<User> {

@@ -2,6 +2,7 @@ import { MailerService } from '@nestjs-modules/mailer';
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { InjectRepository } from '@nestjs/typeorm';
+import { EmploymentService } from 'src/employment/employment.service';
 import { UserStatus } from 'src/user/type/user-status.enum';
 import { UserService } from 'src/user/user.service';
 import { In, Not, Repository } from 'typeorm';
@@ -17,6 +18,7 @@ export class ContactService {
     private userService: UserService,
     private mailerService: MailerService,
     private configService: ConfigService,
+    private employmentService: EmploymentService,
   ) {}
 
   public getContactCount(authUserId: string): Promise<{ total: number }> {
@@ -113,26 +115,28 @@ export class ContactService {
       }),
       this.userService.userRepo.findOneOrFail({
         where: { id: authUserId },
-        select: ['id', 'slug', 'firstName', 'lastName', 'picture', 'status'],
+        select: ['id', 'slug', 'firstName', 'lastName', 'picture', 'status', 'emailAdTypes'],
         relations: ['addresses'],
       }),
     ]);
 
-    this.mailerService.sendMail({
-      to: receiver.email,
-      subject: `Einladung von ${sender.firstName || ''} ${sender.lastName || ''}`,
-      template: 'invite-contact',
-      context: {
-        receiverName: [receiver.firstName, receiver.lastName].filter(Boolean).join(' '),
-        senderName: [sender.firstName, sender.lastName].filter(Boolean).join(' '),
-        senderPicture: sender.picture || this.configService.get('defaultUserPicture'),
-        senderAddress: [sender.addresses?.[0]?.zip, sender.addresses?.[0]?.city].filter(Boolean).join(' '),
-        href: this.configService.get('webAppDomain') + 'network/invitations',
-      },
-    });
+    if (receiver.emailAdTypes?.includes?.(EmailAdType.CONTACT_INVITATION)) {
+      this.mailerService.sendMail({
+        to: receiver.email,
+        subject: `Einladung von ${sender.firstName || ''} ${sender.lastName || ''}`,
+        template: 'invite-contact',
+        context: {
+          receiverName: [receiver.firstName, receiver.lastName].filter(Boolean).join(' '),
+          senderName: [sender.firstName, sender.lastName].filter(Boolean).join(' '),
+          senderPicture: sender.picture || this.configService.get('defaultUserPicture'),
+          senderAddress: [sender.addresses?.[0]?.zip, sender.addresses?.[0]?.city].filter(Boolean).join(' '),
+          href: this.configService.get('webAppDomain') + 'network/invitations',
+        },
+      });
+    }
 
     const contact = existedContact || this.contactRepo.create({ userId, contactUserId: authUserId });
-    contact.invitedAt = new Date()
+    contact.invitedAt = new Date();
 
     await this.contactRepo.save(contact);
   }
