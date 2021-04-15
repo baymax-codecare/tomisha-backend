@@ -72,7 +72,10 @@ export class VerificationService {
   }
 
   public async redirectToWebApp(token: string): Promise<string> {
-    const decoded: TokenPayload = this.jwtService.verify(token);
+    let decoded: TokenPayload
+    try {
+      decoded = this.jwtService.verify(token);
+    } catch (_) {}
 
     if (decoded?.id && decoded.type) {
       const redisClient = await this.redisService.getClient();
