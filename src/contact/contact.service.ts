@@ -3,6 +3,7 @@ import { BadRequestException, Injectable, NotFoundException } from '@nestjs/comm
 import { ConfigService } from '@nestjs/config';
 import { InjectRepository } from '@nestjs/typeorm';
 import { EmploymentService } from 'src/employment/employment.service';
+import { EmailAdType } from 'src/user/type/email-ad-type.enum';
 import { UserStatus } from 'src/user/type/user-status.enum';
 import { UserService } from 'src/user/user.service';
 import { In, Not, Repository } from 'typeorm';
