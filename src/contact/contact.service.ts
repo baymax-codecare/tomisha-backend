@@ -79,19 +79,29 @@ export class ContactService {
       .then(([items, total]) => ({ items, total }));
   }
 
-  public async blockUser(userId: string, authUserId: string): Promise<void> {
+  public async blockUser(userId: string, authUserId: string, companyId?: string): Promise<void> {
+    if (companyId) {
+      this.employmentService.verifyPermission(authUserId, companyId);
+    }
+
+    const id = companyId || authUserId;
+
     const existedContact = await this.contactRepo.findOne({
       where: [
-        { userId, contactUserId: authUserId },
-        { userId: authUserId, contactUserId: userId },
+        { userId, contactUserId: id },
+        { userId: id, contactUserId: userId },
       ],
-      select: ['id'],
+      select: ['id', 'status'],
     });
 
-    const contact = existedContact || this.contactRepo.create({ userId, contactUserId: authUserId });
+    if (existedContact?.status === ContactStatus.BLOCKED) {
+      return;
+    }
+
+    const contact = existedContact || this.contactRepo.create({});
     contact.status = ContactStatus.BLOCKED;
     contact.userId = userId;
-    contact.contactUserId = authUserId;
+    contact.contactUserId = id;
 
     await this.contactRepo.save(contact);
   }

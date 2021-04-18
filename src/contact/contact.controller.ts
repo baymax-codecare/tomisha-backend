@@ -1,4 +1,4 @@
-import { Controller, Delete, Get, Param, ParseIntPipe, ParseUUIDPipe, Post, Put, Query, Req, Res, UseGuards } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, ParseIntPipe, ParseUUIDPipe, Post, Put, Query, Req, Res, UseGuards } from '@nestjs/common';
 import { Request, Response } from 'express';
 import { JwtAuthGuard } from 'src/auth/jwt.guard';
 import { ContactService } from './contact.service';
@@ -19,6 +19,12 @@ export class ContactController {
   @Get()
   public findMyContacts(@Query() findContactsDto: FindContactsDto, @Req() req: Request) {
     return this.contactService.find(findContactsDto, req.user.id);
+  }
+
+  @Post('company-block/:userId')
+  public async companyBlockUser(@Param('userId', ParseUUIDPipe) userId: string, @Body('companyId') companyId: string, @Req() req: Request, @Res() res: Response) {
+    await this.contactService.blockUser(userId, req.user.id, companyId);
+    res.sendStatus(200);
   }
 
   @Post('block/:userId')

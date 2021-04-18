@@ -12,6 +12,7 @@ import { ReferenceService } from 'src/reference/reference.service';
 import { UserType } from './type/user-type.enum';
 import { Reference } from 'src/reference/reference.entity';
 import { EmploymentRole } from 'src/employment/type/employment-role.enum';
+import { ContactStatus } from 'src/contact/type/contact-status.enum';
 
 @Injectable()
 export class UserService {
@@ -67,6 +68,7 @@ export class UserService {
     }
 
     qb
+      // TODO Better handle locked & deactivated users
       .andWhere('user.status NOT IN (:...inactiveStatuses)', { inactiveStatuses: [UserStatus.LOCKED, UserStatus.DEACTIVATED] })
       .addSelect(
         sq => sq.select('COUNT(*)', 'contactCount')
@@ -93,7 +95,7 @@ export class UserService {
           '((c.userId = user.id AND c.contactUserId = :authUserId) OR (c.userId = :authUserId AND c.contactUserId = user.id))',
           { authUserId },
         )
-        // .andWhere('NOT EXISTS c.id OR c.status != :blockedStatus', { blockedStatus: ContactStatus.BLOCKED })
+        .andWhere('c.status != :blockedStatus', { blockedStatus: ContactStatus.BLOCKED })
         .addSelect('c.status', 'contactStatus');
     }
 

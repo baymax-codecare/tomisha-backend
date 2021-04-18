@@ -27,7 +27,7 @@ export function getExpiresAt(sec: number): string {
 
 export function generateSlug() {
   let slug = '';
-  const len = Math.round(Math.random() * 8) + 12;
+  const len = Math.round(Math.random() * 6) + 9;
 
   for(let i = 0; i < len; i++) {
     slug += slugChars.charAt(Math.round(Math.random() * slugCharsLength));
