@@ -12,13 +12,16 @@ export class Employment {
   public id: number;
 
   @Index()
+  @Index()
   @Column('uuid', { nullable: true })
   public userId: string;
 
   @Index()
+  @Index()
   @Column('uuid', { nullable: true })
   public companyId: string;
 
+  @Index()
   @Index()
   @Column('uuid', { nullable: true })
   public agencyId: string;

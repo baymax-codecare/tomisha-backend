@@ -1,4 +1,4 @@
-import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, JoinColumn, OneToMany, BeforeInsert } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, JoinColumn, OneToMany, BeforeInsert, Index } from 'typeorm';
 import { User } from '../user/user.entity';
 import { EntityTimestamp } from 'src/shared/entity/timestamp';
 import { generateSlug } from 'src/shared/utils';
@@ -13,12 +13,14 @@ export class Occupation extends EntityTimestamp {
   @PrimaryGeneratedColumn('uuid')
   public id: string;
 
+  @Index()
   @Column('uuid', { nullable: true })
   public userId: string;
 
   @Column()
   public professionId: number;
 
+  @Index()
   @Column()
   public slug: string;
 

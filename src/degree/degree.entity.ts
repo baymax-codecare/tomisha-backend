@@ -1,4 +1,4 @@
-import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, JoinColumn, OneToMany } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, JoinColumn, OneToMany, Index } from 'typeorm';
 import { User } from '../user/user.entity';
 import { File } from 'src/file/file.entity';
 import { Branch } from 'src/branch/branch.entity';
@@ -9,6 +9,7 @@ export class Degree {
   @PrimaryGeneratedColumn()
   public id: number;
 
+  @Index()
   @Column('smallint', { nullable: true })
   public type: DegreeType;
 
@@ -33,6 +34,7 @@ export class Degree {
   @Column({ nullable: true })
   public description: string;
 
+  @Index()
   @Column('uuid', { nullable: true })
   public userId: string;
 

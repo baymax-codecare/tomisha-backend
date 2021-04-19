@@ -1,4 +1,4 @@
-import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, JoinColumn } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, JoinColumn, Index } from 'typeorm';
 import { User } from '../user/user.entity';
 import { Degree } from 'src/degree/degree.entity';
 import { Employment } from 'src/employment/employment.entity';
@@ -14,6 +14,7 @@ export class File {
   @Column({ nullable: true, length: 250 })
   public url: string;
 
+  @Index()
   @Column('uuid', { nullable: true })
   public userId: string;
 

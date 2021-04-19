@@ -1,4 +1,4 @@
-import { Entity, Column, PrimaryGeneratedColumn, BeforeInsert, ManyToOne, JoinColumn, OneToMany } from 'typeorm';
+import { Entity, Column, PrimaryGeneratedColumn, BeforeInsert, ManyToOne, JoinColumn, OneToMany, Index } from 'typeorm';
 import { EntityTimestamp } from 'src/shared/entity/timestamp';
 import { User } from 'src/user/user.entity';
 import { Job } from 'src/job/job.entity';
@@ -13,15 +13,19 @@ export class Offer extends EntityTimestamp {
   @PrimaryGeneratedColumn()
   public id: number;
 
+  @Index()
   @Column('uuid')
   public userId: string;
 
+  @Index()
   @Column('uuid')
   public jobId: string;
 
+  @Index()
   @Column('uuid')
   public companyId: string;
 
+  @Index()
   @Column()
   public applicationId: number;
 
@@ -34,6 +38,7 @@ export class Offer extends EntityTimestamp {
   @Column('uuid', { nullable: true })
   public agentId: string;
 
+  @Index()
   @Column('uuid', { nullable: true })
   public agencyId: string;
 

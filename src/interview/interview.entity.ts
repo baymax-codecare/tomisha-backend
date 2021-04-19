@@ -1,4 +1,4 @@
-import { Entity, Column, PrimaryGeneratedColumn, BeforeInsert, ManyToOne, JoinColumn, OneToMany } from 'typeorm';
+import { Entity, Column, PrimaryGeneratedColumn, BeforeInsert, ManyToOne, JoinColumn, OneToMany, Index } from 'typeorm';
 import { EntityTimestamp } from 'src/shared/entity/timestamp';
 import { User } from 'src/user/user.entity';
 import { Job } from 'src/job/job.entity';
@@ -13,24 +13,30 @@ export class Interview extends EntityTimestamp {
   @PrimaryGeneratedColumn()
   public id: number;
 
+  @Index()
   @Column('uuid')
   public userId: string;
 
+  @Index()
   @Column('uuid')
   public jobId: string;
 
+  @Index()
   @Column('uuid')
   public companyId: string;
 
+  @Index()
   @Column()
   public applicationId: number;
 
   @Column({ nullable: true })
   public staffId: number;
 
+  @Index()
   @Column('uuid')
   public branchId: string;
 
+  @Index()
   @Column({ length: 50 })
   public slug: string;
 

@@ -1,7 +1,7 @@
 import { Application } from 'src/application/application.entity';
 import { Interview } from 'src/interview/interview.entity';
 import { Offer } from 'src/offer/offer.entity';
-import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, ManyToOne, JoinColumn } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, ManyToOne, JoinColumn, Index } from 'typeorm';
 import { JobLogAction } from './type/job-log-action.enum';
 
 @Entity({ name: 'job-logs' })
@@ -15,12 +15,15 @@ export class JobLog {
   @Column('uuid')
   public userId: string;
 
+  @Index()
   @Column({ nullable: true })
   public applicationId: number;
 
+  @Index()
   @Column({ nullable: true })
   public interviewId: number;
 
+  @Index()
   @Column({ nullable: true })
   public offerId: number;
 

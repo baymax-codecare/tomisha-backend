@@ -1,6 +1,6 @@
 import { EntityTimestamp } from 'src/shared/entity/timestamp';
 import { User } from 'src/user/user.entity';
-import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, JoinColumn } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, JoinColumn, Index } from 'typeorm';
 import { ContactStatus } from './type/contact-status.enum';
 
 @Entity({ name: 'contacts' })
@@ -8,12 +8,15 @@ export class Contact extends EntityTimestamp {
   @PrimaryGeneratedColumn()
   public id: number;
 
+  @Index()
   @Column('uuid', { nullable: true })
   public userId: string;
 
+  @Index()
   @Column('uuid', { nullable: true })
   public contactUserId: string;
 
+  @Index()
   @Column('smallint', { default: ContactStatus.UNREAD })
   public status: ContactStatus;
 

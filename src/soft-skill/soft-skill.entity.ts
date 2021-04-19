@@ -1,5 +1,5 @@
 import { User } from 'src/user/user.entity';
-import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, JoinColumn } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, JoinColumn, Index } from 'typeorm';
 
 @Entity({ name: 'soft-skills' })
 export class SoftSkill {
@@ -15,9 +15,7 @@ export class SoftSkill {
   @Column({ length: 500, nullable: true })
   public description: string;
 
-  @Column('uuid', { nullable: true })
-  public jobId: string;
-
+  @Index()
   @Column('uuid', { nullable: true })
   public userId: string;
 

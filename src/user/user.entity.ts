@@ -88,7 +88,7 @@ export class User extends EntityTimestamp {
   @Column({ nullable: true })
   public lastActiveAt: Date;
 
-  @Column('smallint', { array: true, nullable: true, default: [EmailAdType.NEW_JOB, EmailAdType.CONTACT_INVITATION] })
+  @Column('smallint', { array: true, nullable: true, default: `{${EmailAdType.NEW_JOB}, ${EmailAdType.CONTACT_INVITATION}}` })
   public emailAdTypes: EmailAdType[];
 
   @OneToMany(() => Address, address => address.user, { cascade: true })

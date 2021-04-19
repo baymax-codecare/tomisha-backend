@@ -36,27 +36,35 @@ export class Job extends EntityTimestamp {
   @Column('uuid', { nullable: true })
   public createdById: string;
 
+  @Index()
   @Column({ length: 500 })
   public title: string;
 
+  @Index()
   @Column({ nullable: true })
   public professionId: number;
 
+  @Index()
   @Column('smallint', { nullable: true })
   public minWorkload: number;
 
+  @Index()
   @Column('smallint', { nullable: true })
   public maxWorkload: number;
 
+  @Index()
   @Column('smallint', { nullable: true })
   public level: number;
 
+  @Index()
   @Column('smallint', { nullable: true })
   public years: number;
 
+  @Index()
   @Column('smallint', { array: true, nullable: true })
   public genders: number[];
 
+  @Index()
   @Column('smallint', { array: true, nullable: true })
   public relationships: JobRelationship[];
 

@@ -60,7 +60,7 @@ import { EmploymentModule } from './employment/employment.module';
 
     ThrottlerModule.forRoot({
       ttl: 60,
-      limit: 10,
+      limit: 15,
       ignoreUserAgents: [
         /googlebot/gi,
         /bingbot/gi,

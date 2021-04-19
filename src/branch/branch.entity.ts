@@ -58,6 +58,7 @@ export class Branch extends EntityTimestamp {
   @Column({ nullable: true })
   public totalInterns: number;
 
+  @Index()
   @Column('uuid', { nullable: true })
   public companyId: string;
 
