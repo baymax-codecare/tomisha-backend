@@ -95,7 +95,16 @@ export class UserService {
           '((c.userId = user.id AND c.contactUserId = :authUserId) OR (c.userId = :authUserId AND c.contactUserId = user.id))',
           { authUserId },
         )
-        .andWhere('c.status != :blockedStatus', { blockedStatus: ContactStatus.BLOCKED })
+        .andWhere(
+          qb => 'NOT EXISTS ' + qb
+          .subQuery()
+          .select('bc.id')
+          .from(Contact, 'bc')
+          .where('bc.userId = user.id')
+          .andWhere('bc.contactUserId = :authUserId', { authUserId })
+          .andWhere('bc.status = :blockedStatus', { blockedStatus: ContactStatus.BLOCKED })
+          .getQuery()
+        )
         .addSelect('c.status', 'contactStatus');
     }
 
