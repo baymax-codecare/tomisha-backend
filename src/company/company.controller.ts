@@ -2,7 +2,7 @@ import { Controller, UseGuards, Res, Post, Body, Req, Get, Query, Param, ParseUU
 import { CompanyService } from './company.service';
 import { JwtAuthGuard } from 'src/auth/jwt.guard';
 import { Request, Response } from 'express';
-import { RequestJoinDto } from './dto';
+import { RequestJoinDto, SupportNoDomainDto } from './dto';
 
 @Controller('company')
 export class CompanyController {
@@ -45,6 +45,12 @@ export class CompanyController {
   @Patch(':id')
   public async patchCompany(@Param('id', ParseUUIDPipe) id: string, @Body('slug') slug: string, @Req() req: Request, @Res() res: Response): Promise<void> {
     await this.companyService.patchCompany(id, { slug }, req.user.id);
-    res.sendStatus(200)
+    res.sendStatus(200);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  public async supportNoDomain(@Body() supportNoDomainDto: SupportNoDomainDto, @Res() res: Response) {
+    await this.companyService.supportNoDomain(supportNoDomainDto);
+    res.sendStatus(200);
   }
 }

@@ -4,7 +4,7 @@ import { Transform } from 'class-transformer';
 export class VerifyEmailDto {
   @Transform((email) => email?.toLowerCase?.().trim())
   @IsEmail()
-  email: string;
+  public email: string;
 
   @IsString()
   @IsNotEmpty()

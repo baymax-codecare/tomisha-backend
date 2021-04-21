@@ -7,11 +7,12 @@ import { VerificationType } from 'src/verification/type/verification-type.enum';
 import { NotificationService } from 'src/notification/notification.service';
 import { EmploymentService } from 'src/employment/employment.service';
 import { NotificationType } from 'src/notification/type/notification-type.enum';
-import { RequestJoinDto } from './dto';
+import { RequestJoinDto, SupportNoDomainDto } from './dto';
 import { User } from 'src/user/user.entity';
 import { UserType } from 'src/user/type/user-type.enum';
 import { EmploymentPermission } from 'src/employment/type/employment-permission.enum';
 import { EmploymentRole } from 'src/employment/type/employment-role.enum';
+import { parseJSON } from 'src/shared/utils';
 
 const COMPANY_EMAIL_EXPIRES_IN = 86400 * 5;
 
@@ -162,5 +163,26 @@ export class CompanyService {
         throw e;
       }
     }
+  }
+
+  public async supportNoDomain(supportNoDomainDto: SupportNoDomainDto) {
+    const { address, ...info } = supportNoDomainDto;
+    const addrComps = parseJSON(address?.components);
+
+    await this.mailService.sendMail({
+      to: supportNoDomainDto.email,
+      template: 'support-no-dmain',
+      subject: 'Supportanfrage Domain',
+      context: {
+        info: {
+          ...info,
+          street: [addrComps?.route?.long, addrComps?.street_number?.long]
+            .filter(Boolean)
+            .join(' '),
+          city: [address?.zip, address?.city].filter(Boolean).join(' '),
+          country: addrComps?.country?.long,
+        }
+      }
+    });
   }
 }
