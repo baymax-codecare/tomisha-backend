@@ -40,7 +40,7 @@ export class AuthService {
       delete user.password;
       return user;
     } else {
-      throw new BadRequestException('Email or password is incorrect');
+      throw new BadRequestException('E-Mail oder Passwort ist nicht korrekt');
     }
   }
 
