@@ -1,4 +1,4 @@
-import { IsInt, IsNotEmpty, IsOptional, IsString } from "class-validator";
+import { IsInt, IsNotEmpty, IsOptional, IsString, IsUUID } from "class-validator";
 
 export class DeactivateMeDto {
   @IsString()
@@ -12,4 +12,8 @@ export class DeactivateMeDto {
   @IsString()
   @IsNotEmpty()
   public password: string;
+
+  @IsUUID()
+  @IsOptional()
+  public companyId?: string;
 }

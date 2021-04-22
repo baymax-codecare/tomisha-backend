@@ -13,6 +13,7 @@ import { UserType } from './type/user-type.enum';
 import { Reference } from 'src/reference/reference.entity';
 import { EmploymentRole } from 'src/employment/type/employment-role.enum';
 import { ContactStatus } from 'src/contact/type/contact-status.enum';
+import { EmploymentService } from 'src/employment/employment.service';
 
 @Injectable()
 export class UserService {
@@ -21,6 +22,7 @@ export class UserService {
     public userRepo: Repository<User>,
     @Inject(forwardRef(() => AuthService))
     private authService: AuthService,
+    private employmentService: EmploymentService,
     private mailerSerive: MailerService,
     private referenceService: ReferenceService,
   ) {}
@@ -330,8 +332,13 @@ export class UserService {
 
   public async deactivateMe (deactivateMeDto: DeactivateMeDto, authUserId: string): Promise<void> {
     const user: User = await this.authService.verifyPassword(authUserId, deactivateMeDto.password, true);
+    const companyId = deactivateMeDto.companyId;
 
-    await this.userRepo.update({ id: authUserId }, { status: UserStatus.DEACTIVATED });
+    if (companyId) {
+      await this.employmentService.verifyPermission(authUserId, companyId);
+    }
+
+    await this.userRepo.update({ id: companyId || authUserId }, { status: UserStatus.DEACTIVATED });
 
     this.mailerSerive.sendMail({
       to: user.email,
