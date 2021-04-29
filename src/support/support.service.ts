@@ -41,7 +41,7 @@ export class SupportService {
 
     const user = await this.userService.userRepo.findOne({ where: { email }, select: ['id'] });
     if (user) {
-      throw new BadRequestException('Überprüfe, ob du die E-Mail-Adresse korrekt eingeben hast. use');
+      throw new BadRequestException('Überprüfe, ob du die E-Mail-Adresse korrekt eingeben hast');
     }
 
     const support = this.supportRepo.create(info);

@@ -73,7 +73,7 @@ export class AuthService {
     const { email, firstName, lastName } = verifyEmailDto;
     const existedUser = await this.userService.userRepo.findOne({ where: { email }, select: ['id'] });
     if (!!existedUser) {
-      throw new BadRequestException('Überprüfe, ob du die E-Mail-Adresse korrekt eingeben hast. use');
+      throw new BadRequestException('Überprüfe, ob du die E-Mail-Adresse korrekt eingeben hast');
     }
 
     await this.mailerService.sendMail({
@@ -216,7 +216,7 @@ export class AuthService {
       where: { email: newEmailDto.email },
       select: ['id'],
     })) {
-      throw new BadRequestException('Überprüfe, ob du die E-Mail-Adresse korrekt eingeben hast. use');
+      throw new BadRequestException('Überprüfe, ob du die E-Mail-Adresse korrekt eingeben hast');
     }
 
 

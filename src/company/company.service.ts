@@ -83,7 +83,7 @@ export class CompanyService {
     const email = businessEmail.toLowerCase().trim()
 
     if (!!(await this.userService.userRepo.findOne({ where: { email }, select: ['id'] }))) {
-      throw new BadRequestException('Überprüfe, ob du die E-Mail-Adresse korrekt eingeben hast. use');
+      throw new BadRequestException('Überprüfe, ob du die E-Mail-Adresse korrekt eingeben hast');
     }
 
     const user = await this.userService.userRepo.findOne({ where: { id: authUserId }, select: ['id', 'firstName', 'lastName'] });
