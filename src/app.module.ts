@@ -36,6 +36,7 @@ import { FileModule } from './file/file.module';
 import { JobLogModule } from './job-log/job-log.module';
 import { DegreeModule } from './degree/degree.module';
 import { EmploymentModule } from './employment/employment.module';
+import { SupportModule } from './support/support.module';
 
 @Module({
   imports: [
@@ -132,6 +133,8 @@ import { EmploymentModule } from './employment/employment.module';
     DegreeModule,
 
     EmploymentModule,
+
+    SupportModule,
   ],
 
   providers: [

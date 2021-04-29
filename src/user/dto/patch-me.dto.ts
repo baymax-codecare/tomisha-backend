@@ -26,7 +26,7 @@ export class PatchMeDto {
   public type?: UserType;
 
   @IsEnum(UserStatus)
-  @IsNotIn([UserStatus.DEACTIVATED])
+  @IsNotIn([UserStatus.DEACTIVATED, UserStatus.LOCKED])
   @IsOptional()
   public status?: UserStatus;
 

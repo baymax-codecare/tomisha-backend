@@ -1,4 +1,4 @@
-import { Injectable, BadRequestException, InternalServerErrorException, Inject, forwardRef } from '@nestjs/common';
+import { Injectable, BadRequestException, InternalServerErrorException, Inject, forwardRef, ForbiddenException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { MailerService } from '@nestjs-modules/mailer';
 import { ConfigService } from '@nestjs/config';
@@ -33,10 +33,15 @@ export class AuthService {
 
   public async validateUser(email: string, pass: string): Promise<AuthUser> {
     const user = await this.userService.userRepo.findOne({
-      where: { email: email?.toLowerCase?.().trim(), type: LessThanOrEqual(UserType.AGENT) },
-      select: ['id', 'email', 'password', 'type', 'firstName', 'lastName', 'picture', 'progress', 'status'],
+      where: {
+        email: email?.toLowerCase?.().trim(),
+        type: LessThanOrEqual(UserType.AGENT),
+      },
+      select: ['id', 'password', 'isAdmin'],
     });
-    if (user?.password && compareHash(pass, user.password)) {
+    if (user?.status === UserStatus.LOCKED) {
+      throw new ForbiddenException('You are forbidden from signing in');
+    } if (user?.password && compareHash(pass, user.password)) {
       delete user.password;
       return user;
     } else {
@@ -50,13 +55,15 @@ export class AuthService {
       this.userService.userRepo.update({ id: user.id }, { status: user.status });
     }
 
+    const payload: AuthUser = {
+      id: user.id,
+      isAdmin: user.isAdmin,
+      type: user.type,
+    };
+
     return {
       user,
-      accessToken: this.jwtService.sign({
-        id: user.id,
-        email: user.email,
-        type: user.type,
-      }, {
+      accessToken: this.jwtService.sign(payload, {
         expiresIn: this.configService.get('auth.expiresIn'),
       }),
     };

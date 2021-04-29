@@ -2,9 +2,9 @@ import * as dayjs from 'dayjs';
 import { BadRequestException, forwardRef, Inject, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { MailerService } from '@nestjs-modules/mailer';
-import { Repository } from 'typeorm';
+import { In, Repository } from 'typeorm';
 import { User } from './user.entity';
-import { DeactivateMeDto, SearchUserDto, FindUsersDto, PatchMeDto, FindUserDto } from './dto';
+import { DeactivateMeDto, SearchUserDto, SearchUsersDto, PatchMeDto, FindUserDto, PatchUsersDto } from './dto';
 import { UserStatus } from './type/user-status.enum';
 import { Contact } from 'src/contact/contact.entity';
 import { AuthService } from 'src/auth/auth.service';
@@ -14,6 +14,7 @@ import { Reference } from 'src/reference/reference.entity';
 import { EmploymentRole } from 'src/employment/type/employment-role.enum';
 import { ContactStatus } from 'src/contact/type/contact-status.enum';
 import { EmploymentService } from 'src/employment/employment.service';
+import { AuthUser } from 'src/auth/type/auth-user.interface';
 
 @Injectable()
 export class UserService {
@@ -27,7 +28,7 @@ export class UserService {
     private referenceService: ReferenceService,
   ) {}
 
-  public async findOne(findUserDto: FindUserDto, authUserId?: string): Promise<User> {
+  public async findOne(findUserDto: FindUserDto, authUser?: AuthUser): Promise<User> {
     const { id, slug, occupationId, occupationSlug } = findUserDto;
 
     const qb = this.userRepo
@@ -69,9 +70,12 @@ export class UserService {
       qb.where('user.id = :id', { id });
     }
 
-    qb
+    if (!authUser?.isAdmin) {
       // TODO Better handle locked & deactivated users
-      .andWhere('user.status NOT IN (:...inactiveStatuses)', { inactiveStatuses: [UserStatus.LOCKED, UserStatus.DEACTIVATED] })
+      qb.andWhere('user.status NOT IN (:...inactiveStatuses)', { inactiveStatuses: [UserStatus.LOCKED, UserStatus.DEACTIVATED] });
+    }
+
+    qb
       .addSelect(
         sq => sq.select('COUNT(*)', 'contactCount')
           .from(Contact, 'cc')
@@ -85,7 +89,7 @@ export class UserService {
         'rating',
       );
 
-    if (authUserId) {
+    if (authUser) {
       qb
         .leftJoinAndSelect('user.files', 'f')
         .leftJoinAndSelect('deg.files', 'ef')
@@ -95,7 +99,7 @@ export class UserService {
           Contact,
           'c',
           '((c.userId = user.id AND c.contactUserId = :authUserId) OR (c.userId = :authUserId AND c.contactUserId = user.id))',
-          { authUserId },
+          { authUserId: authUser.id },
         )
         .andWhere(
           qb => 'NOT EXISTS ' + qb
@@ -103,7 +107,7 @@ export class UserService {
           .select('bc.id')
           .from(Contact, 'bc')
           .where('bc.userId = user.id')
-          .andWhere('bc.contactUserId = :authUserId', { authUserId })
+          .andWhere('bc.contactUserId = :authUserId', { authUserId: authUser.id })
           .andWhere('bc.status = :blockedStatus', { blockedStatus: ContactStatus.BLOCKED })
           .getQuery()
         )
@@ -116,9 +120,9 @@ export class UserService {
       throw new NotFoundException();
     }
 
-    if (!user.publicRef && user.type <= UserType.AGENT && authUserId) {
+    if (!user.publicRef && user.type <= UserType.AGENT && authUser) {
       Object.assign(user, {
-        canViewReferences: await this.referenceService.canView({ viewerId: authUserId, userId: user.id }),
+        canViewReferences: await this.referenceService.canView({ viewerId: authUser.id, userId: user.id }),
       });
     }
 
@@ -179,6 +183,7 @@ export class UserService {
         'user.email',
         'user.public',
         'user.emailAdTypes',
+        'user.isAdmin',
         'addr',
         'company.id',
         'company.slug',
@@ -214,7 +219,34 @@ export class UserService {
     return me;
   }
 
-  public search(findUsersDto: FindUsersDto, authUserId: string): Promise<{ items: User[], total: number }> {
+  public list(searchUsersDto: SearchUsersDto): Promise<{ items: User[], total: number }> {
+    const {
+      order = 'createdAt',
+      asc = false,
+      skip = 0,
+      take = 20,
+      email,
+    } = searchUsersDto;
+
+    const qb = this.userRepo
+      .createQueryBuilder('user')
+      .select(['user', 'address'])
+      .leftJoinAndMapOne('user.address', 'user.addresses', 'address')
+      .andWhere('user.type < 4');
+
+    if (email) {
+      qb.andWhere('user.email LIKE :email', { email: `%${email}%` });
+    }
+
+    return qb
+      .take(take)
+      .skip(skip)
+      .orderBy(`user.${order}`, asc ? 'ASC' : 'DESC')
+      .getManyAndCount()
+      .then(([items, total]) => ({ items, total }));
+  }
+
+  public search(searchUsersDto: SearchUsersDto, authUserId: string): Promise<{ items: User[], total: number }> {
     const {
       order = 'createdAt',
       asc = false,
@@ -222,14 +254,16 @@ export class UserService {
       take = 3,
       firstName,
       lastName,
+      email,
       friend,
-    } = findUsersDto;
+    } = searchUsersDto;
 
     const qb = this.userRepo
       .createQueryBuilder('user')
       .select(['user.picture', 'user.id', 'user.slug', 'user.firstName', 'user.lastName', 'user.status', 'user.createdAt', 'address.city', 'address.zip'])
       .leftJoinAndMapOne('user.address', 'user.addresses', 'address')
-      // .where('user.status NOT IN (:...inactiveStatuses)', { inactiveStatuses: [UserStatus.DEACTIVATED, UserStatus.LOCKED] })
+      .where('user.status NOT IN (:...inactiveStatuses)', { inactiveStatuses: [UserStatus.DEACTIVATED, UserStatus.LOCKED] })
+      .andWhere('user.type < 4')
       .andWhere('user.id != :authUserId', { authUserId });
 
     if (firstName) {
@@ -238,6 +272,10 @@ export class UserService {
 
     if (lastName) {
       qb.andWhere('LOWER(user.lastName) LIKE :lastName', { lastName: `%${lastName.toLowerCase()}%` });
+    }
+
+    if (email) {
+      qb.andWhere('user.email LIKE :email', { email: `%${email}%` });
     }
 
     if (friend !== undefined) {
@@ -361,5 +399,9 @@ export class UserService {
     const user = this.userRepo.create(createUserDto as User);
 
     return this.userRepo.save(user);
+  }
+
+  public async patchUsers({ ids, ...dto }: PatchUsersDto): Promise<void> {
+    await this.userRepo.update({ id: In(ids) }, dto);
   }
 }

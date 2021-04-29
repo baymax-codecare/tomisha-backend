@@ -26,7 +26,7 @@ export class FacebookStrategy extends PassportStrategy(Strategy, 'facebook') {
 
     const existedUser = await this.userService.userRepo.findOne({
       where: { email },
-      select: ['id', 'email', 'password', 'type', 'firstName', 'lastName', 'picture', 'progress']
+      select: ['id', 'password', 'isAdmin'],
     });
     if (existedUser) {
       return done(null, classToPlain(existedUser));

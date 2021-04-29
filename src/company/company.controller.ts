@@ -47,10 +47,4 @@ export class CompanyController {
     await this.companyService.patchCompany(id, { slug }, req.user.id);
     res.sendStatus(200);
   }
-
-  @UseGuards(JwtAuthGuard)
-  public async supportNoDomain(@Body() supportNoDomainDto: SupportNoDomainDto, @Res() res: Response) {
-    await this.companyService.supportNoDomain(supportNoDomainDto);
-    res.sendStatus(200);
-  }
 }

@@ -2,7 +2,7 @@ import { Type, Transform } from 'class-transformer';
 import { IsString, IsOptional, MaxLength, IsInt, Max, IsBoolean } from 'class-validator';
 import { User } from '../user.entity';
 
-export class FindUsersDto {
+export class SearchUsersDto {
   @IsString()
   @MaxLength(250)
   @IsOptional()
@@ -12,6 +12,10 @@ export class FindUsersDto {
   @MaxLength(250)
   @IsOptional()
   public lastName?: string;
+
+  @Transform((email) => email?.toLowerCase?.().trim())
+  @IsOptional()
+  public email?: string;
 
   @IsString()
   @MaxLength(250)

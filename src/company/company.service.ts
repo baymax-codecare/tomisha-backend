@@ -164,25 +164,4 @@ export class CompanyService {
       }
     }
   }
-
-  public async supportNoDomain(supportNoDomainDto: SupportNoDomainDto) {
-    const { address, ...info } = supportNoDomainDto;
-    const addrComps = parseJSON(address?.components);
-
-    await this.mailService.sendMail({
-      to: supportNoDomainDto.email,
-      template: 'support-no-dmain',
-      subject: 'Supportanfrage Domain',
-      context: {
-        info: {
-          ...info,
-          street: [addrComps?.route?.long, addrComps?.street_number?.long]
-            .filter(Boolean)
-            .join(' '),
-          city: [address?.zip, address?.city].filter(Boolean).join(' '),
-          country: addrComps?.country?.long,
-        }
-      }
-    });
-  }
 }

@@ -91,6 +91,9 @@ export class User extends EntityTimestamp {
   @Column('smallint', { array: true, nullable: true, default: `{${EmailAdType.NEW_JOB}, ${EmailAdType.CONTACT_INVITATION}}` })
   public emailAdTypes: EmailAdType[];
 
+  @Column({ nullable: true })
+  public isAdmin: boolean;
+
   @OneToMany(() => Address, address => address.user, { cascade: true })
   public addresses: Address[];
 
