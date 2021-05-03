@@ -2,9 +2,11 @@ import { MailerService } from '@nestjs-modules/mailer';
 import { BadRequestException, Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { InjectRepository } from '@nestjs/typeorm';
+import dayjs = require('dayjs');
 import { BranchService } from 'src/branch/branch.service';
 import { EmploymentRole } from 'src/employment/type/employment-role.enum';
 import { parseJSON } from 'src/shared/utils';
+import { SubscriptionService } from 'src/subscription/subscription.service';
 import { UserType } from 'src/user/type/user-type.enum';
 import { UserService } from 'src/user/user.service';
 import { In, Not, Repository } from 'typeorm';
@@ -20,6 +22,7 @@ export class SupportService {
     private mailService: MailerService,
     private userService: UserService,
     private branchService: BranchService,
+    private subscriptionService: SubscriptionService,
     private configService: ConfigService,
   ) {}
 
@@ -115,6 +118,26 @@ export class SupportService {
         });
 
         await this.branchService.branchRepo.save(branch);
+
+        // 1 free month and 3 free job ads for new company
+        const startAt = dayjs().toDate()
+        this.subscriptionService.subscriptionRepo.insert([
+          {
+            companyId: newCompany.id,
+            jobAmount: 1,
+            remainingJobs: 1,
+            total: 0,
+            startAt,
+            endAt: dayjs().add(1, 'year').toDate(),
+          },
+          {
+            companyId: newCompany.id,
+            planId: 'trial',
+            total: 0,
+            startAt,
+            endAt: dayjs().add(1, 'month').toDate(),
+          },
+        ]);
 
         await this.mailService.sendMail({
           to: support.createdBy.email,
