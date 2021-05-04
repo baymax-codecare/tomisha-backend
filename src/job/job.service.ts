@@ -250,11 +250,12 @@ export class JobService {
       .leftJoinAndSelect('job.branch', 'branch')
       .leftJoinAndMapOne('branch.address', 'branch.addresses', 'baddress')
       .leftJoinAndSelect('job.staff', 'staff')
+      .leftJoinAndSelect('staff.profession', 'stprof')
       .innerJoinAndSelect('staff.user', 'user')
       .leftJoinAndMapOne('user.address', 'user.addresses', 'address')
       .leftJoinAndSelect('job.skills', 'skill')
       .leftJoinAndSelect('skill.hardSkill', 'hskill')
-      .leftJoinAndSelect('skill.profession', 'sprof')
+      .leftJoinAndSelect('skill.profession', 'skprof')
       .leftJoinAndSelect('job.profession', 'profession')
       .where('job.slug = :slug', { slug })
 

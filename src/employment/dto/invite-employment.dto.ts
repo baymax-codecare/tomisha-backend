@@ -16,7 +16,8 @@ export class InviteEmploymentDto {
 
   @IsString()
   @MaxLength(500)
-  public message: string;
+  @IsOptional()
+  public message?: string;
 
   @IsString()
   @IsOptional()
