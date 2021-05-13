@@ -42,10 +42,12 @@ export class SupportService {
   public async create(createSupportDto: CreateSupportDto, authUserId: string): Promise<void> {
     const { address, email, ...info } = createSupportDto;
 
-    const user = await this.userService.userRepo.findOne({ where: { email }, select: ['id'] });
+    const user = await this.userService.userRepo.findOne({ where: { email }, select: ['id', 'firstName', 'lastName'] });
     if (user) {
       throw new BadRequestException('Überprüfe, ob du die E-Mail-Adresse korrekt eingeben hast');
     }
+
+    const receiver = await this.userService.userRepo.findOne({ where: { id: authUserId } })
 
     const support = this.supportRepo.create(info);
     support.email = email;
@@ -66,8 +68,10 @@ export class SupportService {
         template: 'support-no-domain',
         subject: 'Supportanfrage Domain',
         context: {
+          receiverName: [receiver.firstName, receiver.lastName].filter(Boolean).join(' '),
           info: {
             ...info,
+            email,
             street: [addrComps?.route?.long, addrComps?.street_number?.long]
               .filter(Boolean)
               .join(' '),

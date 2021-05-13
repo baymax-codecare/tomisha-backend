@@ -7,7 +7,7 @@ import { VerificationType } from 'src/verification/type/verification-type.enum';
 import { NotificationService } from 'src/notification/notification.service';
 import { EmploymentService } from 'src/employment/employment.service';
 import { NotificationType } from 'src/notification/type/notification-type.enum';
-import { RequestJoinDto, SupportNoDomainDto } from './dto';
+import { RequestJoinDto } from './dto';
 import { User } from 'src/user/user.entity';
 import { UserType } from 'src/user/type/user-type.enum';
 import { EmploymentPermission } from 'src/employment/type/employment-permission.enum';

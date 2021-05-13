@@ -2,7 +2,7 @@ import { Controller, UseGuards, Res, Post, Body, Req, Get, Query, Param, ParseUU
 import { CompanyService } from './company.service';
 import { JwtAuthGuard } from 'src/auth/jwt.guard';
 import { Request, Response } from 'express';
-import { RequestJoinDto, SupportNoDomainDto } from './dto';
+import { RequestJoinDto } from './dto';
 
 @Controller('company')
 export class CompanyController {

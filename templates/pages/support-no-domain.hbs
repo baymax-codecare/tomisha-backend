@@ -1,9 +1,7 @@
 {{#> layout}}
   {{#*inline "content"}}
     <p class="mb-md">
-      {{#with info}}
-        Hallo {{firstName}} {{lastName}},
-      {{/with}}
+      Hallo {{receiverName}},
       <br />
       <br />
       vielen Dank für deine Supportanfrage. Deine Anfrage wird so rasch wie möglich erledigt.
@@ -11,10 +9,7 @@
 
     <div class="metadata">
       {{#with info}}
-        {{firstName}} {{lastName}}<br>
-        {{phone}}<br>
         {{email}}<br>
-        {{businessEmail}}<br><br>
         {{name}}<br>
         {{street}}<br>
         {{city}}<br>
