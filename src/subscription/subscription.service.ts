@@ -72,6 +72,7 @@ export class SubscriptionService {
 
     const plan = planId && subscriptionPlans.find((p) => p.id === planId);
     const amount = Math.round(((jobAmount || 0) * JOB_PRICE + (plan ? plan.price * plan.months : 0)) * (1 + VAT) * 100);
+    const receiptId = Math.round(Date.now() / Math.random() / 1000 + Math.random() * 100000) + '';
 
     let res = null;
     try {
@@ -81,6 +82,7 @@ export class SubscriptionService {
         currency: CURRENCY,
         metadata: {
           ...metadata,
+          receiptId,
         },
       });
     } catch (e) {
@@ -99,6 +101,7 @@ export class SubscriptionService {
         startAt: new Date(),
         endAt: dayjs().add(plan.months, 'month').toDate(),
         receipt: res.receipt_url,
+        receiptId,
       });
 
       promises.push(this.subscriptionRepo.save(planSub));
@@ -115,6 +118,7 @@ export class SubscriptionService {
         startAt: new Date(),
         endAt: dayjs().add(1, 'year').toDate(),
         receipt: res.receipt_url,
+        receiptId,
       });
 
       promises.push(this.subscriptionRepo.save(jobSub));

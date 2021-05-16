@@ -12,9 +12,8 @@ import { User } from 'src/user/user.entity';
 import { UserType } from 'src/user/type/user-type.enum';
 import { EmploymentPermission } from 'src/employment/type/employment-permission.enum';
 import { EmploymentRole } from 'src/employment/type/employment-role.enum';
-import { parseJSON } from 'src/shared/utils';
 
-const COMPANY_EMAIL_EXPIRES_IN = 86400 * 5;
+const COMPANY_EMAIL_EXPIRES_IN = 24 * 60 * 60;
 
 @Injectable()
 export class CompanyService {

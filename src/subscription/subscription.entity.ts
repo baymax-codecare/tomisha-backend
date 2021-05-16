@@ -1,4 +1,4 @@
-import { Entity, PrimaryGeneratedColumn, Column, Index, ManyToOne, JoinColumn } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, Index, ManyToOne, JoinColumn, BeforeInsert } from 'typeorm';
 import { EntityTimestamp } from 'src/shared/entity/timestamp';
 import { Employment } from 'src/employment/employment.entity';
 import { User } from 'src/user/user.entity';
@@ -47,6 +47,9 @@ export class Subscription extends EntityTimestamp {
   @Index()
   @Column({ length: 500, nullable: true })
   public receipt: string;
+
+  @Column({ length: 500, nullable: true })
+  public receiptId: string;
 
   @Column('smallint', { nullable: true })
   public remainingJobs: number;
