@@ -51,6 +51,7 @@ export class ApplicationService {
         'prof.title',
         'job.id',
         'job.title',
+        'job.slug',
         'bran.id',
         'bran.name',
         'bran.status',
@@ -195,7 +196,7 @@ export class ApplicationService {
             .select('jlog.id')
             .from(JobLog, 'jlog')
             .where('jlog.applicationId = ap.id')
-            .andWhere('jlog.action >= :yesAction', { yesAction: JobLogAction.YES })
+            .andWhere('jlog.action > :yesAction', { yesAction: JobLogAction.YES })
             .getQuery()
         )
         .select('ap.id')
