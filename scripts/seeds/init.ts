@@ -25,6 +25,7 @@ export class Init1613273718350 implements MigrationInterface {
         firstName: 'Tomisha',
         lastName: 'Admin',
         isAdmin: true,
+        type: 3,
       }));
   }
 
