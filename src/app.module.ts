@@ -50,7 +50,8 @@ import { SupportModule } from './support/support.module';
       imports: [ConfigModule],
       inject: [ConfigService],
       useFactory: (configService: ConfigService) => {
-        return configService.get('isProd') ? [] : [
+        // return configService.get('isProd') ? [] : [
+        return [
           {
             rootPath: configService.get('uploadDir'),
             serveRoot: '/public',
