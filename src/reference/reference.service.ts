@@ -93,7 +93,7 @@ export class ReferenceService {
     const [user, refUser] = await Promise.all([
       this.userService.userRepo.findOne({
         where: { id: userId },
-        select: ['id', 'firstName', 'lastName'],
+        select: ['id', 'firstName', 'lastName', 'picture'],
         relations: ['addresses'],
       }),
 

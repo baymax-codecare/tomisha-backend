@@ -28,7 +28,7 @@ export default () => {
     port: parseInt(process.env.APP_PORT, 10) || 3100,
     domain: process.env.APP_DOMAIN,
     webAppDomain,
-    defaultUserPicture: webAppDomain + '/img/user_placeholder.svg',
+    defaultUserPicture: webAppDomain + '/public/img/user_placeholder.svg',
 
     uploadDir: UPLOAD_DIR,
     assetDir,

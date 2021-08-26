@@ -209,13 +209,13 @@ export class JobService {
       qb.andWhere(`(${where})`);
     }
 
-    if (lng && lat) {
-      qb
-        .addSelect('point(address.lng, address.lat)<@>point(:lng, :lat)', 'distance')
-        .andWhere('point(address.lng, address.lat)<@>point(:lng, :lat) < :miles')
-        .setParameters({ lng, lat, miles })
-        .orderBy('distance', 'ASC');
-    }
+    // if (lng && lat) {
+    //   qb
+    //     .addSelect('point(address.lng, address.lat)<@>point(:lng, :lat)', 'distance')
+    //     .andWhere('point(address.lng, address.lat)<@>point(:lng, :lat) < :miles')
+    //     .setParameters({ lng, lat, miles })
+    //     .orderBy('distance', 'ASC');
+    // }
 
     return qb.getManyAndCount()
       .then(([items, total]) => ({ items, total }));
